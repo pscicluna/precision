@@ -6,7 +6,9 @@ def loaddarks(darkframes=None):
     darks=np.array([])
     for f in darkframes:
         hdu=fits.open(f)
+        #remember to add exposure time info!
         darks=np.r_[hdu[0].data] 
+        hdu.close()
     return darks
 
 def makemasterdark(darkframes=None,computevariance=True,computeRON=False):
@@ -19,13 +21,13 @@ def makemasterdark(darkframes=None,computevariance=True,computeRON=False):
             darkframes=loaddarks(darkframes)
         elif isinstance(darkframes[0],np.ndarray):
             #contains fits data already
-            pass # horrible hack :)#masterdark=np.nanmedian(darkframes,axis=0)
+            pass # horrible hack :)
         else:
             raise TypeError("You need to pass either data arrays or the names of files containing dark frames")
         pass
     else:
         raise ValueError("Dark frames must be defined either as file names or data previously read in")
-    masterdark=np.nanmedian(darkframes)
+    masterdark=np.nanmedian(darkframes,axis=0) #check that this is robust for cubes :/
     #calculate variance
     if (computevariance):
         darkvar=(np.pi/(2.*darkframes.shape[0]))*(np.std(darkframes,axis=0))**2.
