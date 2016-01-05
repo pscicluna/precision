@@ -7,7 +7,7 @@ def loaddarks(darkframes=None):
     for f in darkframes:
         hdu=fits.open(f)
         #remember to add exposure time info!
-        darks=np.r_[hdu[0].data] 
+        darks=np.r_[darks,hdu[0].data] 
         hdu.close()
     return darks
 
