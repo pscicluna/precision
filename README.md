@@ -1,6 +1,6 @@
 # README #
 
-PRECISION is designed for use in reducing astronomical infrared observations. It is a work in progress, just like this README file. The objective is to make it as close to a fully-automated pipeline as possible for as many instruments as possible. This README file is currently a placeholder until I have a more complete set of things to document.
+PRECISION is designed for use in reducing astronomical infrared observations. It is a work in progress, just like this README file. The objective is to make it as close to a fully-automated pipeline as possible for SPHERE, NACO, VISIR and if possible other instruments too. This README file is currently a placeholder until I have a more complete set of things to document.
 
 ### What is this repository for? ###
 

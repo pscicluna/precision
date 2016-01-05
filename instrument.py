@@ -6,7 +6,7 @@ import math as mt
 
 class Instrument(object):
     #base class to be inherited by instrument-specific classes with details and redution routines, possibly simulation routines too
-    """Generic instrument class. Contains things that all routines will need (e.g. dark subtraction, flat fielding, sky subtraction, bad pixel identification etc) while specific reduction routines are provided in extension classes. """
+    """Generic instrument class. Contains things that all routines will need (e.g. dark subtraction, flat fielding, sky subtraction, bad pixel identification etc) while specific reduction routines are provided in extension classes. As much as possible, uncertainty tracking should be included here. """
     def __init__(self,scifiles=None,badpixfile=None,skyfile=None,flatfiles=None,darkfiles=None,mode=None,optics=None):
         self.scifiles=scifiles
         self.badpixfile=badpixfile
@@ -15,6 +15,9 @@ class Instrument(object):
         self.darkfiles=darkfiles
         self.mode=mode #instrument modes, dictionary
         self.optics=optics #instrument optics, dictionary
+
+    def __str__(self):
+        pass
 
     def setbadpixelmap(self):
         hdu=fits.open(badpixfile)

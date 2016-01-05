@@ -39,6 +39,7 @@ class Irdis(Instrument):
         return self.sciframes[:,:,0:1024],self.sciframes[:,:,1024:2048]
 
     def CI(self): #test on VY CMa
+        #
         pass
 
     def SDI(self): #test on GD50, VY CMa
