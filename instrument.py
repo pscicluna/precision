@@ -2,6 +2,7 @@ import numpy as np
 import scipy.ndimage as simage
 import astropy.io.fits as fits
 import math as mt
+from scipy.signal import medfilt2d
 #from instrument import Instrument
 
 class Instrument(object):
@@ -27,9 +28,19 @@ class Instrument(object):
         hdu=fits.open(self.skyfile)
         self.skyframe=hdu[0].data
     
-    def setbadpix(sciframe,badpixmap):
+    def setbadpix(self,sciframe,badpixmap):
         #set all bad pixels to NaN
         sciframe[badpixmap==1]=float('Nan') #does this work?
+    
+    def badpixcorrect(self):
+        if len(self.sciframes.shape) == 3): #datacube
+            for i in range(self.sciframes.shape[0]):
+                #make sure to test how many times the windowing should be repeated - adding many small windows doens't cost too much
+                self.sciframes[i,self.badpixmap]=medfilt2d(self.sciframes[i,:,:],25)[self.badpixmap]
+                self.sciframes[i,self.badpixmap]=medfilt2d(self.sciframes[i,:,:],5)[self.badpixmap]
+        else: #only one image
+            self.sciframes[self.badpixmap]=medfilt2d(self.sciframes,25)[self.badpixmap]
+            self.sciframes[self.badpixmap]=medfilt2d(self.sciframes,5)[self.badpixmap]
 
     def readobservations(self):
         #read in all the science frames and compile a list of them.
