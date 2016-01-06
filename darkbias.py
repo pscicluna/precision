@@ -2,7 +2,7 @@
 import numpy as np
 import astropy.io.fits as fits
 
-def loaddarks(darkframes=None):
+def loaddarks(darkframes=None,**kwargs):
     darks=np.array([])
     for f in darkframes:
         hdu=fits.open(f)
@@ -11,7 +11,7 @@ def loaddarks(darkframes=None):
         hdu.close()
     return darks
 
-def makemasterdark(darkframes=None,computevariance=True,computeRON=False):
+def makemasterdark(darkframes=None,computevariance=True,computeRON=False,**kwargs):
     #take many dark frames as input, then 
     if darkframes is not None:
         #check what has been passed
@@ -36,7 +36,7 @@ def makemasterdark(darkframes=None,computevariance=True,computeRON=False):
         pass
     return masterdark,darkvar,RON
 
-def darksubtract(scienceframes=None,darkframes=None):
+def darksubtract(scienceframes=None,darkframes=None,**kwargs):
     #performs dark subtraction from science frames
     if darkframes is not None:
         #check what has been passed
@@ -66,12 +66,6 @@ def darksubtract(scienceframes=None,darkframes=None):
 
 def biassubtract():
     pass
-
-#def gethotpixels():
-#    pass
-
-#def getcoldpixels():
-#    pass
 
 def readnoise():
     pass

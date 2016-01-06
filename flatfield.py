@@ -3,7 +3,7 @@ import numpy as np
 import astropy.io.fits as fits
 from astropy.stats import sigma_clip
 
-def loadflats(flatframes=None,masterdark=None):
+def loadflats(flatframes=None,masterdark=None,**kwargs):
     flats=np.array([])
     for f in flatframes:
         hdu=fits.open(f)
@@ -22,7 +22,8 @@ def loadflats(flatframes=None,masterdark=None):
         hdu.close()
     return flats
 
-def makemasterflat(flatframes=None,masterdark=None,computevar=True,method='med',computebadpix=True,sig=5.0):
+def makemasterflat(flatframes=None,masterdark=None,computevar=True,method='med'
+                   ,computebadpix=True,sig=5.0,**kwargs):
     if flatframes is not None:
         #check what has been passed
         if isinstance(flatframes[0],basestring):
@@ -40,7 +41,7 @@ def makemasterflat(flatframes=None,masterdark=None,computevar=True,method='med',
         flatvar=(np.pi/(2.*flatframes.shape[0]))*(np.std(flatframes,axis=0))**2
     if computebadpix:
         badpixelmap=np.zeros_like(masterflat)
-        badpixelmap[np.unravel_index(sigma_clip(masterflat,sig=5.0).mask,badpixelmap.shape)] = 1 #test this thoroughly!! 5-sigma outliers chosen as, given size of IRDIS detector, there should be ~1 false bad pixel if pixel values are normally distributed; exact value should be determined through experimentation
+        badpixelmap[np.unravel_index(sigma_clip(masterflat,sig=sig).mask,badpixelmap.shape)] = 1 #test this thoroughly!! 5-sigma outliers chosen as, given size of IRDIS detector, there should be ~1 false bad pixel if pixel values are normally distributed; exact value should be determined through experimentation
         if computevar:
             return masterflat,flatvar,badpixelmap
         else:
@@ -52,7 +53,8 @@ def makemasterflat(flatframes=None,masterdark=None,computevar=True,method='med',
             return masterflat
 
 
-def flatfield(scienceframe=None,flatframes=None,darkframes=None,masterdark=None):
+def flatfield(scienceframe=None,flatframes=None,darkframes=None
+              ,masterdark=None,**kwargs):
     if flatframes is not None:
         if isinstance(flatframes[0],basestring):
             if isinstance(flatframes,[list,ndarray]):
@@ -70,6 +72,11 @@ def flatfield(scienceframe=None,flatframes=None,darkframes=None,masterdark=None)
             raise TypeError("You need to pass either numpy data arrays or the names of files containing flat frames")
     else:
         raise ValueError("Flat frames must be defined either as file names or data previously read in")
-    pass
+    if scienceframe is None:
+        return masterflat,flatvar,badpixelmap
+    else:
+        #now flat-field science frames
+        return scienceframe/masterflat,masterflat,flatvar,badpixelmap
+
 
 

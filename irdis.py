@@ -15,7 +15,8 @@ import flatfield
 
 #need a list of filters, conoragraphs, etc
 class Irdis(Instrument):
-    def __init__(self,scifiles=None,badpixfile=None,skyfile=None,flatfiles=None,darkfiles=None,mode=None,optics=None,options=None):
+    def __init__(self,scifiles=None,badpixfile=None,skyfile=None,flatfiles=None,
+                 darkfiles=None,mode=None,optics=None,options=None):
         self.scifiles=scifiles
         self.badpixfile=badpixfile
         self.skyfile=skyfile
@@ -25,7 +26,7 @@ class Irdis(Instrument):
         self.optics=optics
         self.options=options
     
-    def findcentre(self):
+    def findcentre(self,**kwargs):
         pass
         #how on earth do I do this? try finding the coronagraph?
         #in case of ALC look for central spot using photutils
@@ -37,24 +38,24 @@ class Irdis(Instrument):
         #now need to use info to align both cubes
         #return centres of circles
 
-    def splitchannels(self):
+    def splitchannels(self,**kwargs):
         #call this after dark/flat/sky correction and centre finding but before anything else - will probably end up most used...
         return self.sciframes[:,:,0:1024],self.sciframes[:,:,1024:2048]
 
-    def CI(self): #test on VY CMa
+    def CI(self,**kwargs): #test on VY CMa
         #
         pass
 
-    def SDI(self): #test on GD50, VY CMa
+    def SDI(self,**kwargs): #test on GD50, VY CMa
         pass
 
-    def ADI(self): #test on GD50
+    def ADI(self,**kwargs): #test on GD50
         pass
     
-    def LOCI(self):
+    def LOCI(self,**kwargs):
         pass
 
-    def DPI(self): #test on HR 3090
+    def DPI(self,**kwargs): #test on HR 3090
         pass
 
 class IrdisLSS(Irdis):

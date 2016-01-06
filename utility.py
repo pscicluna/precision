@@ -5,7 +5,7 @@ import os
 import sys
 import astropy.io.fits as fits
 
-def psfsub(source,psfref,centres,rin,rout):
+def psfsub(source,psfref,centres,rin,rout,**kwargs):
     sourceap=pu.CircularAnnulus(centres[0],rin,rout)
     psfap=pu.CircularAnnulus(centres[1],rin,rout)
     sourcetab=pu.aperture_photometry(source,sourceap)
@@ -15,7 +15,7 @@ def psfsub(source,psfref,centres,rin,rout):
     return source
 
 #is this the place for a fits file finder and sorter? I guess I can always move it later
-def spherefitssorter(directory):
+def spherefitssorter(directory,**kwargs):
     #search through a directory and find all fits files. Then search the headers for the OB properties, and produce output which groups files together for reduction
     filelist=glob.glob(directory+'/SPHER*.fits')
     filelist.sort()
@@ -133,7 +133,7 @@ def spherefitssorter(directory):
 #HIERARCH ESO TPL NEXP =     18 / Number of exposures within template 
 
 
-def irdisobsbuilder(hdu,filename):
+def irdisobsbuilder(hdu,filename,**kwargs):
     #build a dictionary to contain all properties of an IRDIS observation file
     obs=dict(fitsfile=filename, dit=hdu[0].header['HIERARCH ESO DET SEQ1 DIT'], ndit=hdu[0].header['HIERARCH ESO DET NDIT'],iexp=hdu[0].header['HIERARCH ESO TPL EXPNO'],nexp=hdu[0].header['HIERARCH ESO TPL NEXP'],filt=hdu[0].header['HIERARCH ESO INS COMB IFLT'],coron=[hdu[0].header['HIERARCH ESO INS COMB ICOR'],hdu[0].header['HIERARCH ESO SEQ CORO XC'],hdu[0].header['HIERARCH ESO SEQ CORO YC'],hdu[0].header['HIERARCH ESO SEQ CORO DATE']],parang=[hdu[0].header['HIERARCH ESO TEL PARANG START'],hdu[0].header['HIERARCH ESO TEL PARANG END']],mode=hdu[0].header['HIERARCH ESO INS4 MODE'],rot=hdu[0].header['HIERARCH ESO INS4 COMB ROT'],dither=[hdu[0].header['HIERARCH ESO INS1 DITH POSX'],hdu[0].header['HIERARCH ESO INS1 DITH POSY']],cat=hdu[0].header['HIERARCH ESO DPR CATG'],obstype=[hdu[0].header['HIERARCH ESO DPR TYPE'],hdu[0].header['HIERARCH ESO OCS OBSTYPE LIST']],template=hdu[0].header['HIERARCH ESO TPL ID'],arm=hdu[0].header['HIERARCH ESO SEQ ARM'],obsid=hdu[0].header['HIERARCH ESO OBS ID'],origfile=hdu[0].header['ORIGFILE'])
     return obs
