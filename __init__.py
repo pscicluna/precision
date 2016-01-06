@@ -9,5 +9,5 @@ import darkbias
 import irdis
 import utility
 
-__all__=["instrument", "irdis","darkbias","utility"]
+__all__=["flatfield", "irdis","darkbias","utility"]
 

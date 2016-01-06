@@ -8,12 +8,14 @@ import photutils as pu
 import skimage as skim
 from skimage.transform import hough_circle
 from skimage.util import img_as_ubyte
+import darkbias
+import flatfield
 #from skimage.feature import peak_local_max, canny
 
 
 #need a list of filters, conoragraphs, etc
 class Irdis(Instrument):
-    def __init__(self,scifiles=None,badpixfile=None,skyfile=None,flatfiles=None,darkfiles=None,mode=None,optics=None):
+    def __init__(self,scifiles=None,badpixfile=None,skyfile=None,flatfiles=None,darkfiles=None,mode=None,optics=None,options=None):
         self.scifiles=scifiles
         self.badpixfile=badpixfile
         self.skyfile=skyfile
@@ -21,6 +23,7 @@ class Irdis(Instrument):
         self.darkfiles=darkfiles
         self.mode=mode 
         self.optics=optics
+        self.options=options
     
     def findcentre(self):
         pass
