@@ -33,7 +33,7 @@ class Instrument(object):
         sciframe[badpixmap==1]=float('Nan') #does this work?
     
     def badpixcorrect(self):
-        if len(self.sciframes.shape) == 3): #datacube
+        if (len(self.sciframes.shape) == 3): #datacube
             for i in range(self.sciframes.shape[0]):
                 #make sure to test how many times the windowing should be repeated - adding many small windows doens't cost too much
                 self.sciframes[i,self.badpixmap]=medfilt2d(self.sciframes[i,:,:],25)[self.badpixmap]

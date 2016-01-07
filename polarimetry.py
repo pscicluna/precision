@@ -4,7 +4,19 @@ import numpy as np
 import math as mt
 
 def calcQU(Oray,Eray,**kwargs):
-    pass
+    """
+    Calculates linear Stokes parameter from observed O-ray and E-ray intensities.
+
+    For use when each Stokes parameter is only measured at a single angle or when using the double difference method of polarimetric differential imaging
+    """
+    return Oray - Eray
+
+def calcpQU(O0,E0,O45,E45,**kwargs):
+    """
+    Calculates fractional Stokes parameter based on PDI method to cancel instrumental and atmospheric effects
+    """
+    R=np.sqrt((O0-E0)/(O45-E45))
+    return (R-1.)/(R+1.)
 
 def polfrac(I,Q=None,U=None,V=None,**kwargs):
     ind=np.where(I > 0.)

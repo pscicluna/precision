@@ -9,7 +9,7 @@ def loadflats(flatframes=None,masterdark=None,**kwargs):
         hdu=fits.open(f)
         if masterdark is None: #check to see if dark subtraction has been requested
             masterdark = np.zeros_like(hdu[0].data)
-        if len(hdu[0].data.shape) == 3): #it's a cube!
+        if (len(hdu[0].data.shape) == 3): #it's a cube!
 #            flat=np.zeros([hdu[0].data.shape])
             for i in range(hdu[0].data.shape[0]):
                 median=np.nanmedian(hdu[0].data[i,:,:])
@@ -17,7 +17,7 @@ def loadflats(flatframes=None,masterdark=None,**kwargs):
                 flats=np.r_[flats,flat]
         else:
             median=np.nanmedian(hdu[0].data)
-            flat=((hdu[0].data-masterdark)/median))
+            flat=((hdu[0].data-masterdark)/median)
             flats=np.r_[flats,flat]#hdu[0].data] #(hdu[0].data/median) #needs revision in case of datacube
         hdu.close()
     return flats
