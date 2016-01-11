@@ -32,15 +32,24 @@ class Instrument(object):
         #set all bad pixels to NaN
         sciframe[badpixmap==1]=float('Nan') #does this work?
     
-    def badpixcorrect(self):
-        if (len(self.sciframes.shape) == 3): #datacube
-            for i in range(self.sciframes.shape[0]):
+    def badpixcorrect(self,data=None):
+        if data is None:
+            data=self.sciframes
+            recopy=True
+        else:
+            recopy=False
+        if (len(data.shape) == 3): #datacube
+            for i in range(data.shape[0]):
                 #make sure to test how many times the windowing should be repeated - adding many small windows doens't cost too much
-                self.sciframes[i,self.badpixmap]=medfilt2d(self.sciframes[i,:,:],25)[self.badpixmap]
-                self.sciframes[i,self.badpixmap]=medfilt2d(self.sciframes[i,:,:],5)[self.badpixmap]
+                data[i,self.badpixmap]=medfilt2d(data[i,:,:],25)[self.badpixmap]
+                data[i,self.badpixmap]=medfilt2d(data[i,:,:],5)[self.badpixmap]
         else: #only one image
-            self.sciframes[self.badpixmap]=medfilt2d(self.sciframes,25)[self.badpixmap]
-            self.sciframes[self.badpixmap]=medfilt2d(self.sciframes,5)[self.badpixmap]
+            data[self.badpixmap]=medfilt2d(data,25)[self.badpixmap]
+            data[self.badpixmap]=medfilt2d(data,5)[self.badpixmap]
+        if recopy:
+            self.sciframes=data
+        else:
+            return data
 
     def readobservations(self):
         #read in all the science frames and compile a list of them.

@@ -30,7 +30,10 @@ def makemasterdark(darkframes=None,computevariance=True,computeRON=False,**kwarg
     masterdark=np.nanmedian(darkframes,axis=0) #check that this is robust for cubes :/
     #calculate variance
     if (computevariance):
-        darkvar=(np.pi/(2.*darkframes.shape[0]))*(np.std(darkframes,axis=0))**2.
+        if len(darkframes.shape()) == 3:
+            darkvar=(np.pi/(2.*darkframes.shape[0]))*(np.std(darkframes,axis=0))**2.
+        else:
+            darkvar=masterdark
     # return master dark frame1
     if computeRON: #for testing only. Expensive to take so many differences and create so many subapertures. Based on algorithm described in NACO pipeline manual. Also provide same routine in separate routine if needed.
         pass

@@ -60,7 +60,7 @@ def flatfield(scienceframe=None,flatframes=None,darkframes=None
             if isinstance(flatframes,[list,ndarray]):
                 masterflat,flatvar=makemasterflat(flatframes,masterdark)
             else:
-                masterflat=matmasterflat(flatframes,masterdark,computevar=False)[0]
+                masterflat=makemasterflat(flatframes,masterdark,computevar=False)[0]
                 flatvar=np.sqrt(masterflat)
         elif isinstance(flatframes[0],ndarray):
             if isinstance(flatframes,[list,ndarray]):
