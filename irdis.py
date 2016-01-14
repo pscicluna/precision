@@ -45,17 +45,12 @@ class Irdis(Instrument):
         return data[:,:,0:1024],data[:,:,1024:2048]
 
     def CI(self,**kwargs): #test on VY CMa
-        #dark/flat/sky correction (optional)
-
-        #undither and concatenate exposure cubes
-
-        #optional - derotate
-
-        #split L and R channels and concatenate cubes
-
-        #collapse cubes
-
-        #flux
+        self.finalNoDerot=np.mean(self.medianNoDerot,axis=0) #produces L- and R- channel images
+        self.finalNoDerot=np.mean(self.finalNoDerot,axis=0) #combine both channels
+        self.finalvarNoDerot=np.mean(self.varNoDerot,axis=0)         #small number approximation - 
+        self.finalvarNoDerot=(np.mean(self.finalvarNoDerot,axis=0) / #variance on mean = mean of variances / N
+                              (2*self.varNoDerot.shape[0]))          #or alternatively
+                                                                     #uncertainty on mean = mean of uncertainties / sqrt(N)
         pass
 
     def SDI(self,**kwargs): #test on GD50, VY CMa
@@ -97,9 +92,15 @@ class Irdis(Instrument):
         pass
 
     def reduce(self,**kwargs):
-        self.masterdark,self.darkvar,self.RON=darkbias.makemasterdark(self.darkframes,**kwargs)
-        
-        self.masterflat,self.flatvar,self.badpixmap=flatfield.makemasterflat(self.flatframes,self.masterdark,**kwargs)
+        if self.darkframes is not None:
+            self.masterdark,self.darkvar,self.RON=darkbias.makemasterdark(self.darkframes,**kwargs)
+        else:
+            self.masterdark=None
+
+        if self.flatframes is not None:        
+            self.masterflat,self.flatvar,self.badpixmap=flatfield.makemasterflat(self.flatframes,self.masterdark,**kwargs)
+        else:
+            self.masterflat=None
         
         for f in self.skyfiles:
             data,header=self.readdata(f)
@@ -118,6 +119,7 @@ class Irdis(Instrument):
         self.medianDerot=np.array([])
         self.varNoDerot=np.array([])
         self.varDerot=np.array([])
+        self.headers=np.array([])
         for f in self.scifiles:
             #read data
             data,header=self.readdata(f)
@@ -151,6 +153,8 @@ class Irdis(Instrument):
                                                                header['HIERARCH ESO INS1 DITH POSY']])
                                    ]
                                   ]
+
+            self.headers=np.r_[self.headers,header]
             #now derotate cube if pupil stabilised
             if self.rot=='PUPIL':
                 pass
@@ -174,8 +178,10 @@ class Irdis(Instrument):
         hdu=fits.open(filename)
         cube=hdu[0].data #extract data itself
         #then extract important header info ? (might have already done this before, not sure about architecture yet)
-        cube=cube-self.masterdark
-        cube=cube/self.masterflat
+        if self.masterdark is not None:
+            cube=cube-self.masterdark
+        if self.masterflat is not None:
+            cube=cube/self.masterflat
         header=hdu[0].header
         extra='??'
         hdu.close()
