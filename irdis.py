@@ -10,7 +10,7 @@ from skimage.transform import hough_circle
 from skimage.util import img_as_ubyte
 import darkbias
 import flatfield
-#from register_images import register_images
+from image_registration.register_images import register_images
 #from skimage.feature import peak_local_max, canny
 
 
@@ -106,9 +106,9 @@ class Irdis(Instrument):
             data=self.badpixcorrect(data)
             self.skyframes=np.r_[self.skyframes,data]
         #now median combine all sky frames
-        if len(self.skyframes.shape) == 3):
+        if (len(self.skyframes.shape) == 3):
             self.mastersky=np.nanmedian(self.skyframes,axis=0)
-            self.skyvar=(np.pi/(2.*self.skyframes.shape[0]))*np.std(self.skyframes,axis=0))**2
+            self.skyvar=(np.pi/(2.*self.skyframes.shape[0]))*(np.std(self.skyframes,axis=0))**2
             self.skyfiles=None
         else:
             self.mastersky=self.skyframes
@@ -126,7 +126,7 @@ class Irdis(Instrument):
             data=self.skysub(data,self.mastersky)
             #split channels and align
             datal,datar=self.splitchannels(data)
-            #chanshift=register_images(datal[0],datar[0],usamp=10.)
+            chanshift=register_images(datal[0],datar[0],usamp=10.)
             datar=simage.interpolation.shift(datar,chanshift)
             #data=np.r_[datal,datar]
             #datal=None
