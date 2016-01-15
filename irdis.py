@@ -54,14 +54,14 @@ class Irdis(Instrument):
         pass
 
     def SDI(self,**kwargs): #test on GD50, VY CMa
+        self.CI()
 
-        #dark/flat/sky correction (optional)
+        self.SDINoDerot=np.mean(self.medianNoDerot,axis=0) #produces L- and R- channel images
+        self.SDINoDerot=self.SDINoDerot[1]-self.SDINoDerot[0] #check which way round this is supposed to be! and scaling!
 
-        #undither and concatenate exposure cubes
-
-        #optional - derotate
-
-        #split channels - create concatenated cube but also collapse cube of each channel and do subtraction
+        self.varSDINoDerot=np.mean(self.varNoDerot,axis=0) / self.varNoDerot.shape[0]
+        self.varSDINoDerot=np.sum(self.varSDINoDerot, axis=0)
+        
         pass
 
     def ADI(self,**kwargs): #test on GD50
@@ -71,17 +71,18 @@ class Irdis(Instrument):
         pass
 
     def DPI(self,**kwargs): #test on HR 3090
-        #perform dark/flat/sky correction (optional)
-
-        #undither
+        self.CI()
 
         #split L and R channels into O- and E-rays respectively
-        Oray,Eray=self.splitchannels()
+        self.MeanOray=np.mean(self.medianNoDerot[:,0,:,:],axis=0)
+        self.MeanEray=np.mean(self.medianNoDerot[:,1,:,:],axis=0)# self.splitchannels()
         
         #calculate Stokes parameter(s) the old fashioned way
         #concatenate channels and collapse for I 
+        self.I=self.MeanOray + self.MeanEray
 
         #O - E for Q/U
+        self.pol=self.MeanOray - self.MeanEray #this all needs updating to enable it to process an entire DPI observation, correctly interpreting what combinations of +/- Q/U to do
 
         #if double difference, do +Q - -Q
 
@@ -166,7 +167,7 @@ class Irdis(Instrument):
             self.sciframes
 
         if self.mode=='CI':
-            print 'This mode is not available yet'
+            self.CI()
         elif self.mode=='DPI':
             print 'This mode is not available yet'
         elif self.mode=='SDI':
