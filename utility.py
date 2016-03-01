@@ -3,6 +3,8 @@ import photutils as pu
 import glob
 import os
 import sys
+from xml.dom.minidom import parse
+import xml.dom.minidom
 import astropy.io.fits as fits
 
 def psfsub(source,psfref,centres,rin,rout,**kwargs):
@@ -14,9 +16,106 @@ def psfsub(source,psfref,centres,rin,rout,**kwargs):
     source=source-psfref*ratio
     return source
 
+def findassociations(dirname,**kwargs):
+    '''
+    Find ESO file association tree xml files to identify which files should be reduced with which calibrations.
+    '''
+    files=glob.glob(dirname+'*.xml') #find all xml files in directory of interest.
+    files.sort()
+    observations=[]
+    for f in files:
+        if f.startswith('SPHER'):
+            #print 'Reduction of SPHERE observations is not implemented yet'
+            #print 'Skipping file ',f
+            #now make it parse the file
+            a=parseassociation(f)
+            if a['category'] == 'IRD_SCI_CLI':
+                #data can be reduced
+                print 'File ',f,' will be reduced'
+                observations.append(a)
+            else:
+                print 'Mode ',a['category'],' is not supported yet'
+                print 'skipping file ',f
+        elif f.startswith('NACO'):
+            print 'Reduction of NACO observations is not implemented yet'
+            print 'Skipping file ',f
+        elif f.startswith('VISIR'):
+            print 'Reduction of VISIR observations is not implemented yet'
+            print 'Skipping file ',f
+        else:
+            print 'Skipping file ',f
+    pass
+
+def parseassociation(filename,**kwargs):
+    '''
+    Read association tree file to build a reduction group/object
+
+    reads in ESO association tree xml and puts the information into a reduction object
+
+    to do:
+    figure out which files are shared between different objects, pre-process them and present higher-level calibration files to the main reduction
+    '''
+#    Handler=xml.sax.handler.ContentHandler
+#    association=xml.sax.parse(filename,Handler)
+    DOMtree=parse(filename)
+    assoctree=DOMtree.firstChild
+    if assoctree.attributes['category'].value.startswith('IRD_SCI'):
+        mode=assoctree.attributes['category'].value
+        science=assoctree.childNodes[1] #mainfiles
+        calibs=assoctree.childNodes[5] #associatedfiles
+        msgs=assoctree.childNodes[3]
+        assocs=CalAssoc(assoctree)
+        return assocs
+#        pass
+    else:
+        print 'Currently only IRDIS science data are supported'
+        print 'skipping file ',filename
+        return
+#    for calib in calibs.childNodes[1:-1:2]: #pull out each calibration and identify which file does which thing - some need to be generalised so they don't just refer to CLI
+#        if calib.attributes['category'].endswith('DARK'): #dark frames
+#            pass
+#        elif calib.attributes['category'].endswith('BACK'): #sky?
+#            pass
+#        elif calib.attributes['category'].endswith('CLI_FLUX'): #flux
+#            pass
+#        elif calib.attributes['category'].endswith('FLAT'): #flatfields
+#            pass
+#        elif calib.attributes['category'] == 'IRD_DIST': #distortion maps
+#            pass
+#        elif calib.attributes['category'].endswith('CLI_PHOT'): #photometric calibration
+#            pass
+#        else:
+#            pass
+#        pass
+#    scifiles=[]
+#    for sci in science.childNodes[1:-1:2]:
+#        scifiles.append([sci.attributes['name'].value,sci.attributes['category']])
+#    pass
+                        
+
+def CalAssoc(node,**kwargs):
+    a={'category': node.attributes['category'].value,'main':[],'cals':[]}#,'msg':[],'cals':[]}
+    main=node.childNodes[1]
+    print main.toxml()
+    for m in main.childNodes[1:-1:2]:
+        a['main'].append([m.attributes['category'].value,m.attributes['name'].value])
+    msg=node.childNodes[3]
+    if msg.hasChildNodes():
+        message=[]
+        for m in msg.childNodes[1:-1:2]:
+            message.append(m.attributes['text'].value)
+        a['msg']=message
+    cals=node.childNodes[5]
+    if cals.hasChildNodes():
+        for c in cals.childNodes[1:-1:2]:
+            a['cals'].append(CalAssoc(c))
+    return a
+
 #is this the place for a fits file finder and sorter? I guess I can always move it later
 def spherefitssorter(directory,**kwargs):
     #search through a directory and find all fits files. Then search the headers for the OB properties, and produce output which groups files together for reduction
+    #for ESO instruments, this can actually be replaced by just parsing the association trees (xml) to figure out which files and calibrations are associated.
+    #I can worry about other observatories later
     filelist=glob.glob(directory+'/SPHER*.fits')
     filelist.sort()
     print("There are ",len(filelist)," SPHERE files in this directory")

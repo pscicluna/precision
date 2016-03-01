@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.ndimage as simage
 import astropy.io.fits as fits
+import astropy.stats as astats
 import math as mt
 from instrument import Instrument
 #import astropysics.ccd as ccd
@@ -28,8 +29,25 @@ class Irdis(Instrument):
         self.optics=optics
         self.options=options
     
-    def findcentre(self,**kwargs):
-        pass
+    def findcentre(self,data,**kwargs):
+        mean,median,std=astats.sigma_clipped_stats(data,sigma=3.0)
+        sources=pu.daofind(data[500:550,450:500] - median, # assumes datacube #[500:550,450:500]
+                           fwhm = 3.0,
+                           threshold=5.*std,
+                           sharplo=0.3,
+                           sharphi=0.5,
+                           roundhi=0.3,
+                           roundlo=-0.3
+                           )
+        sources.sort('peak') #take brightest source
+        try:
+            self.central=sources[:][-1]
+        except:
+            self.central=sources
+#        self.central=central
+        self.sources=sources
+        #return central,sources
+#        pass
         #how on earth do I do this? try finding the coronagraph?
         #in case of ALC look for central spot using photutils
         #else use scikit-image to find circles for CLC
@@ -43,6 +61,15 @@ class Irdis(Instrument):
     def splitchannels(self,data,**kwargs):
         #call this after dark/flat/sky correction and centre finding but before anything else - will probably end up most used...
         return data[:,:,0:1024],data[:,:,1024:2048]
+
+    def derotate(self,data,centre,**kwargs):
+        #pad image so that centre is at the centre of the array
+        padX=[data.shape[1] - centre[0],centre[0]] #check which is row and column in image and centre routines!
+        padX=[data.shape[0] - centre[1],centre[1]]
+        datap=np.pad(data,[padY,padX],'constant')
+        #derotate
+        data=simage.interpolation.rotate(datap,angle,reshape=False)[padY[0]:-padY[1],padX[0]-padX[1]]
+        pass
 
     def CI(self,**kwargs): #test on VY CMa
         self.finalNoDerot=np.mean(self.medianNoDerot,axis=0) #produces L- and R- channel images
@@ -65,6 +92,7 @@ class Irdis(Instrument):
         pass
 
     def ADI(self,**kwargs): #test on GD50
+        #classical ADI, take median non-derotated frame and subtract it from each derotated frame, then collapse the whole cube
         pass
     
     def LOCI(self,**kwargs):
@@ -121,9 +149,17 @@ class Irdis(Instrument):
         self.varNoDerot=np.array([])
         self.varDerot=np.array([])
         self.headers=np.array([])
+        isci=0
         for f in self.scifiles:
             #read data
             data,header=self.readdata(f)
+            if isci==0:
+                #pull important info out of header from first science file
+                self.rot=header['HIERARCH ESO INS4 COMB ROT']
+                self.parangInit=header['HIERARCH ESO TEL PARANG START']
+                self.optics={filt: [header['HIERARCH ESO INS1 FILT NO'],header['HIERARCH ESO INS1 FILT ID'],header['HIERARCH ESO INS1 FILT NAME']],opti:[header['HIERARCH ESO INS1 OPTI2 NO'],header['HIERARCH ESO INS1 OPTI2 ID'],header['HIERARCH ESO INS1 OPTI2 NAME']],stop: [header['HIERARCH ESO INS1 OPTI1 NO'],header['HIERARCH ESO INS1 OPTI1 ID'],header['HIERARCH ESO INS1 OPTI1 NAME']]}
+                #coros and stops could be in IRDIS (INS1) or in CPI (INS4)
+                pass
             #intermediate processing
             data=self.badpixcorrect(data)
             data=self.skysub(data,self.mastersky)
@@ -158,20 +194,27 @@ class Irdis(Instrument):
             self.headers=np.r_[self.headers,header]
             #now derotate cube if pupil stabilised
             if self.rot=='PUPIL':
-                pass
+                self.findcentre(self.medianNoDerot[isci][0])
+#                pass
             #first find centre of rotation
                 
             #then calculate rotation as a function of time
-
-            #then derotate each frame of each half of the detector
+                self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
+                self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
+                for i in range(data.shape[0]):
+                    angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
+                    #then derotate each frame of each half of the detector
+                    self.derotate(datal[i,:,.],self.centre,angle) #simage.interpolation.rotate(datal[i,:,:],angle,reshape=False) #somehow I must be able to pass in the centre of rotation...I guess I could also shift it so that it is centred correctly first.
             self.sciframes
+            isci+=1
+
 
         if self.mode=='CI':
             self.CI()
         elif self.mode=='DPI':
-            print 'This mode is not available yet'
+            self.DPI()
         elif self.mode=='SDI':
-            print 'This mode is not available yet'
+            self.SDI()
         else:
             print 'IRDIS mode not recognised'
 
