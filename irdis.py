@@ -24,6 +24,7 @@ class Irdis(Instrument):
         self.badpixfile=badpixfile
         self.skyfiles=skyfiles
         self.flatfiles=flatfiles
+#        self.flatcals
         self.darkfiles=darkfiles
         self.mode=mode 
         self.optics=optics
@@ -76,7 +77,6 @@ class Irdis(Instrument):
         datap=np.pad(data,[padY,padX],'constant')
         #derotate
         data=simage.interpolation.rotate(datap,angle,reshape=False)[padY[0]:-padY[1],padX[0]-padX[1]]
-        pass
 
     def CI(self,**kwargs): #test on VY CMa
         self.finalNoDerot=np.mean(self.medianNoDerot,axis=0) #produces L- and R- channel images
@@ -85,6 +85,8 @@ class Irdis(Instrument):
         self.finalvarNoDerot=(np.mean(self.finalvarNoDerot,axis=0) / #variance on mean = mean of variances / N
                               (2*self.varNoDerot.shape[0]))          #or alternatively
                                                                      #uncertainty on mean = mean of uncertainties / sqrt(N)
+        #need to fix uncertainty tracking...current version should underestimate variances, only alteratives (apart from MC) appear to overestimate them
+#        self.finalvarNoDerot+=
         if self.rot=='PUPIL':        
             self.finalDerot=np.mean(self.medianDerot,axis=0) #produces L- and R- channel images
             self.finalDerot=np.mean(self.finalDerot,axis=0) #combine both channels
@@ -335,7 +337,22 @@ class Irdis(Instrument):
         else:
             print 'IRDIS mode not recognised'
             
+    def sciFlux(self,**kwargs):
+        ''' 
+        Take non-coronographic observation to compute contrast and facilitate flux calibration
+        '''
+        #read flux file and calibrate it
+
+        #extract point-source counts and peak counts for target
         
+        #scale for ND filters and exposure time
+        pass
+
+    def photCal(self,**kwargs):
+        '''
+        Perform photometric calibration with standard star
+        '''
+        pass
 
     def readdata(self,filename,**kwargs):
         hdu=fits.open(filename)
@@ -351,24 +368,29 @@ class Irdis(Instrument):
         return cube,header#,extra
 
     def output(self,**kwargs):
-        print 'Writing reduced data to file '
+        self.outfile=(self.headers[0]['HIERARCH ESO OBS NAME'] + '_' + 
+                      self.optics['filt'][2] + '_' + 
+                      self.headers[0]['HIERARCH ESO DET SEQ1 DIT'] + '_' + 
+                      self.headers[0]['HIERARCH ESO OBS START'] +
+                      '.fits')
+        print 'Writing reduced data to file ',self.outfile
         if self.interProd: #write intermediate products too
             pass
-        fits.writeto( ,self.finalNoDerot,self.outheader)
-        fits.update( , self.finalvarNoDerot,'var CI')
+        fits.writeto(self.outfile ,self.finalNoDerot,self.outheader)
+        fits.update(self.outfile , self.finalvarNoDerot,'var CI')
         if self.rot=='PUPIL':
-            fits.update( , self.finalDerot, 'CI derotated')
-            fits.update( , self.finalvarDerot, 'var CI derotated')
-            fits.update( , self.finalADI, 'Classical ADI')
-            fits.update( , self.finalvarADI, 'var Classical ADI')
+            fits.update(self.outfile , self.finalDerot, 'CI derotated')
+            fits.update(self.outfile , self.finalvarDerot, 'var CI derotated')
+            fits.update(self.outfile , self.finalADI, 'Classical ADI')
+            fits.update(self.outfile , self.finalvarADI, 'var Classical ADI')
         if self.mode=='SDI':
-            fits.update( , self.SDINoDerot, 'SDI')
-            fits.update( , self.varSDINoDerot, 'var SDI')
+            fits.update(self.outfile , self.SDINoDerot, 'SDI')
+            fits.update(self.outfile , self.varSDINoDerot, 'var SDI')
             if self.rot=='PUPIL':
-                fits.update( , self.SDIDerot, 'SDI derotated')
-                fits.update( , self.varSDIDerot, 'var SDI derotated')
-                fits.update( , self.finalSADI, 'SADI')
-                fits.update( , self.finalvarSADI, 'var SADI')
+                fits.update(self.outfile , self.SDIDerot, 'SDI derotated')
+                fits.update(self.outfile , self.varSDIDerot, 'var SDI derotated')
+                fits.update(self.outfile , self.finalSADI, 'SADI')
+                fits.update(self.outfile , self.finalvarSADI, 'var SADI')
         if self.mode=='DPI':
             pass
         fits.update( , self.badpixmap, 'bad pixel map')
