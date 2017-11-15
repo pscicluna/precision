@@ -3,6 +3,7 @@ import scipy.ndimage as simage
 import astropy.io.fits as fits
 import math as mt
 from scipy.signal import medfilt2d
+from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 #from instrument import Instrument
 
 class Instrument(object):
@@ -17,8 +18,11 @@ class Instrument(object):
         self.mode=mode #instrument modes, dictionary
         self.optics=optics #instrument optics, dictionary
 
+    def __repr__(self):
+        raise NotImplementedError("Please implement this in your subclass")
+        
     def __str__(self):
-        pass
+        raise NotImplementedError("Please implement this in your subclass")
 
     def setbadpixelmap(self):
         hdu=fits.open(badpixfile)
@@ -40,11 +44,17 @@ class Instrument(object):
             recopy=False
         if (len(data.shape) == 3): #datacube
             for i in range(data.shape[0]):
-                #make sure to test how many times the windowing should be repeated - adding many small windows doens't cost too much
-                data[i,self.badpixmap]=medfilt2d(data[i,:,:],25)[self.badpixmap]
-                data[i,self.badpixmap]=medfilt2d(data[i,:,:],5)[self.badpixmap]
+                #make sure to test how many times the windowing should be repeated - adding many small windows doens't cost too much - needs much optimisation though!
+                mask=self.badpixmap#np.logical_or(self.badpixmap,np.isnan(data[i,:,:]))
+                #print mask.shape
+                
+                #data[i,self.badpixmap]=medfilt2d(data[i,:,:],25)[self.badpixmap]
+                data[i,mask]=medfilt2d(data[i,:,:],9)[mask]
+                data[i,mask]=medfilt2d(data[i,:,:],5)[mask]
+                data[i,:,:] = interpolate_replace_nans(data[i,:,:],Gaussian2DKernel(stddev=1))
+                #exit()
         else: #only one image
-            data[self.badpixmap]=medfilt2d(data,25)[self.badpixmap]
+            #data[self.badpixmap]=medfilt2d(data,25)[self.badpixmap]
             data[self.badpixmap]=medfilt2d(data,5)[self.badpixmap]
         if recopy:
             self.sciframes=data
@@ -57,7 +67,7 @@ class Instrument(object):
         for f in self.scifiles:
             self.obslist.append(fits.open(f))
     
-    def skysub(sciframe,skyframe):
+    def skysub(self,sciframe,skyframe):
         sciframe-=skyframe
         return sciframe
 

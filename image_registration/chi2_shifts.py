@@ -12,8 +12,8 @@
 #
 ######################################################################
 
-from image_registration.fft_tools import correlate2d,fast_ffts,dftups,upsample_image,zoom,shift
-import image_registration # for doctests
+from fft_tools import correlate2d,dftups,upsample_image,zoom,shift#,fast_ffts
+#import image_registration # for doctests
 import iterative_zoom
 import warnings
 import numpy as np

@@ -16,8 +16,8 @@ try:
     from AG_fft_tools import correlate2d,fast_ffts
     from AG_fft_tools import dftups,upsample_image,shift
 except ImportError:
-    from image_registration.fft_tools import correlate2d,fast_ffts
-    from image_registration.fft_tools import dftups,upsample_image,shift
+    from fft_tools import correlate2d,fast_ffts
+    from fft_tools import dftups,upsample_image,shift
 import warnings
 import numpy as np
 

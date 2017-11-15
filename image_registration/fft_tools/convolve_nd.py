@@ -340,10 +340,10 @@ def convolvend(array, kernel, boundary='fill', fill_value=0,
         return rifft.real
 
 
-import pytest
+#import pytest
 import itertools
 params = list(itertools.product((True,False),(True,False),(True,False)))
-@pytest.mark.parametrize(('psf_pad','use_numpy_fft','force_ignore_zeros_off'),params)
+#@pytest.mark.parametrize(('psf_pad','use_numpy_fft','force_ignore_zeros_off'),params)
 def test_3d(psf_pad, use_numpy_fft, force_ignore_zeros_off, debug=False, tolerance=1e-17):
     array = np.zeros([32,32,32])
     array[15,15,15]=1

@@ -1,5 +1,5 @@
 import numpy as np
-import photutils as pu
+#import photutils as pu
 import glob
 import os
 import sys
@@ -44,7 +44,10 @@ def findassociations(dirname,**kwargs):
             print 'Skipping file ',f
         else:
             print 'Skipping file ',f
-    pass
+    obs_list=[]
+    for observation in observations:
+        obs_list.append(Observation(observation))
+    return obs_list
 
 def parseassociation(filename,**kwargs):
     '''
@@ -96,7 +99,7 @@ def parseassociation(filename,**kwargs):
 def CalAssoc(node,**kwargs):
     a={'category': node.attributes['category'].value,'main':[],'cals':[]}#,'msg':[],'cals':[]}
     main=node.childNodes[1]
-    print main.toxml()
+    #print main.toxml()
     for m in main.childNodes[1:-1:2]:
         a['main'].append([m.attributes['category'].value,m.attributes['name'].value])
     msg=node.childNodes[3]
@@ -110,6 +113,24 @@ def CalAssoc(node,**kwargs):
         for c in cals.childNodes[1:-1:2]:
             a['cals'].append(CalAssoc(c))
     return a
+
+class Observation(object):
+    def __init__(self,obs_dict,datadir='',**kwargs):
+        self.datadir=datadir
+        self.obs_type=obs_dict['category']
+        self.obs_main=obs_dict['main']
+        self.cals={}
+        if obs_dict['cals']:
+            for c in obs_dict['cals']:
+                self.cals[c['category']]=Observation(c, datadir=datadir)
+
+    def __repr__(self):
+        return "<Observation type: %s \n dir: %s \n main: %s \n cals: %s >" % (self.obs_type, self.datadir, self.obs_main, self.cals)
+
+    def __str__(self):
+        return "Observation( type: %s \n dir: %s \n main: %s \n cals: %s )" % (self.obs_type, self.datadir, self.obs_main, self.cals) 
+        
+
 
 #is this the place for a fits file finder and sorter? I guess I can always move it later
 def spherefitssorter(directory,**kwargs):
