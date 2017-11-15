@@ -555,7 +555,7 @@ class Irdis(Instrument):
         Take non-coronographic observation to compute contrast and facilitate flux calibration
         '''
         #read flux file and calibrate it
-        fluxframes=self.readdata(self.flux)
+        fluxframes,fluxhdr=self.readdata(self.flux)
         #extract point-source counts and peak counts for target
         
         #scale for ND filters and exposure time
@@ -570,7 +570,9 @@ class Irdis(Instrument):
     def readdata(self,filename,**kwargs):
         hdu=fits.open(filename)
         cube=hdu[0].data #extract data itself
+        exptime=hdu[0].header['EXPTIME']
         #then extract important header info ? (might have already done this before, not sure about architecture yet)
+        cube=cube/exptime #?
         if self.masterdark is not None:
             cube=cube-self.masterdark
         if self.masterflat is not None:

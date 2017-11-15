@@ -29,7 +29,7 @@ def loaddarks(darkframes=None,darkdir='',**kwargs):
             darks=np.r_[darks,hdu[0].data]
         except ValueError:
             darks=hdu[0].data
-            #        darks=np.r_[darks,hdu[0].data/hdu[0].header['EXPTIME']] #counts/s ?
+            darks=np.r_[darks,hdu[0].data/hdu[0].header['EXPTIME']] #counts/s ?
         hdu.close()
         #pass
     elif isinstance(darkframes,np.ndarray) or isinstance(darkframes,list):
@@ -37,7 +37,7 @@ def loaddarks(darkframes=None,darkdir='',**kwargs):
             hdu=fits.open(f)
             #remember to add exposure time info!
             darks=np.r_[darks,hdu[0].data]
-            #        darks=np.r_[darks,hdu[0].data/hdu[0].header['EXPTIME']] #counts/s ?
+            darks=np.r_[darks,hdu[0].data/hdu[0].header['EXPTIME']] #counts/s ?
             hdu.close()
     return darks
 
