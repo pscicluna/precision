@@ -9,7 +9,7 @@ import darkbias
 import irdis
 import utility
 
-version_info = (0,1,3) #version, point, revision
+version_info = (0,1,4) #version, point, revision
 __version__ = "v"+'.'.join([str(i) for i in version_info])
 
 __all__=["flatfield", "irdis","darkbias","utility"]
