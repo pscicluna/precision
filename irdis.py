@@ -698,7 +698,7 @@ class Irdis(Instrument):
             hdu.header.append(("Flux factor",self.flux.flux,"Divide images by this amount to convert to contrast"))
         else:
             hdu.header.append(("Flux factor",1,"No flux frames observed, no conversion necessary"))
-        hdu.header.append(("COMMENT",self.__str__())) #full list of files and associations used to produce this dataset
+        #hdu.header.append(("COMMENT",self.__str__().encode("ascii"))) #full list of files and associations used to produce this dataset - fix in future versions to produce a more useful list which can be used to reconstruct the processing without the association tree ... fix later...
         hdulist=fits.HDUList(hdu)
         hdu=fits.ImageHDU(self.finalNoDerot,name="Image (No Derotation)")
         hdulist.append(hdu)
@@ -717,7 +717,7 @@ class Irdis(Instrument):
         elif self.mode=='SDI':
             pass
         logtime = str(datetime.datetime.now()).replace(" ","_")
-        hdulist.writeto(self.outfile+"_"+logtime+"_prod.fits")
+        hdulist.writeto(self.prefix+"_"+logtime+"_prod.fits")
         pass
     
 
