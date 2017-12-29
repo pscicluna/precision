@@ -694,7 +694,10 @@ class Irdis(Instrument):
         hdu.header.append(("Pipeline","precision"))
         hdu.header.append(("PipeAuth","P. Scicluna"))
         hdu.header.append(("PipeVers",__version__))
-        hdu.header.append(("Flux factor",self.flux.flux,"Divide images by this amount to convert to contrast"))
+        if self.flux is not None:
+            hdu.header.append(("Flux factor",self.flux.flux,"Divide images by this amount to convert to contrast"))
+        else:
+            hdu.header.append(("Flux factor",1,"No flux frames observed, no conversion necessary"))
         hdu.header.append(("COMMENT",self.__str__())) #full list of files and associations used to produce this dataset
         hdulist=fits.HDUList(hdu)
         hdu=fits.ImageHDU(self.finalNoDerot,name="Image (No Derotation)")
