@@ -17,15 +17,109 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as cols
 from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 import skimage.transform as tf
+import pickle
+import os
+from __init__ import __version__ #hack, replace later
+
+eso_fits_keywords = ["ORIGIN",
+                     "DATE",
+                     "TELESCOP",
+                     "INSTRUME",
+                     "OBJECT",
+                     "RA",
+                     "DEC",
+                     "EQUINOX",
+                     "RADECSYS",
+                     #EXPTIME
+                     #MJD-OBS
+                     #DATE-OBS
+                     #UTC
+                     #LST
+                     "ESO DPR CATG",
+                     "ESO DPR TECH",
+                     "ESO DPR TYPE",
+                     "ESO INS COMB ICOR",
+                     "ESO INS COMB IFLT",
+                     "ESO INS COMB POLA",
+                     "ESO INS COMB VCOR",
+                     "ESO INS DATE",
+                     "ESO INS1 FILT ID",
+                     "ESO INS1 FILT NAME",
+                     "ESO INS1 FILT NO",
+                     "ESO INS1 ID",
+                     "ESO INS1 MODE",
+                     "ESO INS1 OPTI1 ID",
+                     "ESO INS1 OPTI1 NAME",
+                     "ESO INS1 OPTI1 NO",
+                     "ESO INS1 OPTI1 TYPE",
+                     "ESO INS1 OPTI2 ID",
+                     "ESO INS1 OPTI2 NAME",
+                     "ESO INS1 OPTI2 NO",
+                     "ESO INS1 OPTI2 TYPE",
+                     "ESO OBS ID",
+                     "ESO OBS NAME",
+                     "ESO OBS NTPL",
+                     "ESO OBS PROG ID",
+                     "ESO OBS START",
+                     "ESO SEQ ARM",
+                     "ESO SEQ CORO CPI_ND",
+                     "ESO SEQ CORO DATE",
+                     "ESO SEQ CORO XC",
+                     "ESO SEQ CORO YC",
+                     "ESO TEL ALT",
+                     "ESO TEL AMBI RHUM",
+                     "ESO TEL AMBI TAU0",
+                     "ESO TEL AMBI TEMP",
+                     "ESO TEL AMBI WINDDIR",
+                     "ESO TEL AMBI WINDSP",
+                     "ESO TEL AZ",
+                     "ESO TEL DATE",
+                     "ESO TEL DID",
+                     "ESO TEL GEOELEV",
+                     "ESO TEL GEOLAT",
+                     "ESO TEL GEOLON",
+                     "ESO TEL IA FWHM",
+                     "ESO TEL IA FWHMLIN",
+                     "ESO TEL IA FWHMLINOBS",
+                     "ESO TEL ID",
+                     "ESO TEL MOON DEC",
+                     "ESO TEL MOON RA",
+                     "ESO TEL OPER",
+                     "ESO TEL TARG ALPHA",
+                     "ESO TEL TARG COORDTYPE",
+                     "ESO TEL TARG DELTA",
+                     "ESO TEL TARG EPOCH",
+                     "ESO TEL TARG EPOCHSYSTEM",
+                     "ESO TEL TARG EQUINOX",
+                     "ESO TEL TARG PARALLAX",
+                     "ESO TEL TARG PMA",
+                     "ESO TEL TARG PMD",
+                     "ESO TEL TARG RADVEL",
+                     "ESO TEL TH M1 TEMP",
+                     "ESO TEL TRAK STATUS",
+                     "ESO TPL DID",
+                     "ESO TPL EXPNO",
+                     "ESO TPL ID",
+                     "ESO TPL NAME",
+                     "ESO TPL NEXP",
+                     "ESO TPL PRESEQ",
+                     "ESO TPL START",
+                     "ESO TPL VERSION",
+                     "PIXSCAL"
+                     #ARCFILE
+
+                     ]
 
 #need a list of filters, conoragraphs, etc
 class Irdis(Instrument):
     def __init__(self, observation,#,scifiles=None,badpixfile=None,skyfiles=None,
                  #flatfiles=None,darkfiles=None,mode=None,optics=None,
-                 options=None, interProd=True, **kwargs):
+                 options=None, interProd=False,prefix="", **kwargs):
+        self.__version__ = __version__
         self.science=observation.obs_main
         self.datadir=observation.datadir
         self.mode=observation.obs_type
+        self.prefix=prefix
         self.darks=observation.cals['IRD_DARK']
         if 'CLI' in self.mode:
             self.flats=observation.cals['IRD_CLI_FLAT']
@@ -53,6 +147,7 @@ class Irdis(Instrument):
         #astrometric calibration numbers - probably won't use these and just say that pipeline is not suitable for high-precision astrometry
         self.plateScale=12.251 #IRDIS plate scale (after distortion correction) of irdis detector
         self.Anamorph=1.0062 #anamophic distortion multiplier for Y direction of detector
+        self.logfile = open(str(datetime.datetime.now()).split(' ')[0]+"_"+prefix+"_precision.log",'wb+')
 
     def __repr__(self):
         return "<IRDIS mode: %s science data: %s sky: %s flux: %s flats: %s darks: %s options: %s>" % (self.mode, self.science, self.sky, self.flux, self.flats, self.darks)
@@ -159,12 +254,12 @@ class Irdis(Instrument):
 
     def derotate(self,data,centre,angle,**kwargs):
         #pad image so that centre is at the centre of the array
-        padX=[data.shape[1] - centre[0],centre[0]] #check which is row and column in image and centre routines! - this doesn't work for non-integer cases. Have to do some other shifting I guess
-        padY=[data.shape[0] - centre[1],centre[1]]
-        print padX,padY
-        datap=np.pad(data,[padY,padX],'constant')
+        #padX=[data.shape[1] - centre[0],centre[0]] #check which is row and column in image and centre routines! - this doesn't work for non-integer cases. Have to do some other shifting I guess
+        #padY=[data.shape[0] - centre[1],centre[1]]
+        #print padX,padY
+        #datap=np.pad(data,[padY,padX],'constant')
         #derotate
-        data=simage.interpolation.rotate(datap,angle,reshape=False)[padY[0]:-padY[1],padX[0]-padX[1]]
+        data=simage.interpolation.rotate(data,angle)#,reshape=False)#[padY[0]:-padY[1],padX[0]-padX[1]]
 
     def CI(self,**kwargs): #test on VY CMa
         self.finalNoDerot=np.mean(self.medianNoDerot,axis=0) #produces L- and R- channel images
@@ -175,14 +270,13 @@ class Irdis(Instrument):
                                                                      #uncertainty on mean = mean of uncertainties / sqrt(N)
         #need to fix uncertainty tracking...current version should underestimate variances, only alteratives (apart from MC) appear to overestimate them
 #        self.finalvarNoDerot+=
-        #if self.rot=='PUPIL':        
-        #    self.finalDerot=np.mean(self.medianDerot,axis=0) #produces L- and R- channel images
-        #    self.finalDerot=np.mean(self.finalDerot,axis=0) #combine both channels
-        #    self.finalVarDerot=np.mean(self.varDerot,axis=0)         #small number approximation - 
-        #    self.finalVarDerot=(np.mean(self.finalVarDerot,axis=0) / #variance on mean = mean of variances / N
-        #                          (2*self.varDerot.shape[0]))          #or alternatively
+        if self.rot=='PUPIL':        
+            self.finalDerot=np.mean(self.medianDerot,axis=0) #produces L- and R- channel images
+            #self.finalDerot=np.mean(self.finalDerot,axis=0) #combine both channels
+            #self.finalVarDerot=np.mean(self.varDerot,axis=0)         #small number approximation - 
+            self.finalVarDerot=(np.mean(self.varDerot,axis=0) / #variance on mean = mean of variances / N
+                                  (self.varDerot.shape[0]))          #or alternatively
         return 
-#        pass
 
     def SDI(self,**kwargs): #test on GD50, VY CMa
         self.CI()
@@ -317,6 +411,7 @@ class Irdis(Instrument):
         pass
 
     def reduce(self,**kwargs):
+        self.status=0
         if self.darks is not None:
             self.masterdark,self.darkvar,self.RON=darkbias.makemasterdark(self.darks,**kwargs)
         else:
@@ -328,8 +423,11 @@ class Irdis(Instrument):
             self.masterflat=None
         if self.sky is not None:
             self.makesky()
+        if self.flux is not None:
+            self.sciFlux()
+            #exit()
 
-        print np.sum(np.isnan(self.mastersky))
+        #print np.sum(np.isnan(self.mastersky))
         self.medianNoDerot=np.array([])
         self.medianDerot=np.array([])
         self.varNoDerot=np.array([])
@@ -476,18 +574,11 @@ class Irdis(Instrument):
             #print self.shiftr
             print isci*2,isci*2+1
             temp=self.medianNoDerot[isci*2]+self.medianNoDerot[isci*2+1]#simage.interpolation.shift(self.medianNoDerot[1],[self.shiftr[1],self.shiftr[0]])
-            #temp-=np.median(temp)
-            #print np.sum(np.isnan(temp))
-            #print np.sum(np.logical_not(np.isfinite(temp)))
-            #print np.max(temp),np.min(temp)
-#            print temp.shape
-            #self.findcentre(temp,[512,512],window=512,interact=True)
-#            plt.imshow(temp, norm=cols.Normalize(vmin=0.1,vmax=3.),origin='lower')
-#            plt.show()
-#            exit()
+            
             #now derotate cube if pupil stabilised
             if self.rot=='PUPIL':
-                continue
+                #continue
+                #shift cubes to centre them correctly
             #    centreGuess=[header['HIERARCH ESO SEQ CORO XC'],header['HIERARCH ESO SEQ CORO XC']]
             #    self.findcentre(self.medianNoDerot[isci][0],centreGuess)
             #    self.centre=[self.central['xcentroid'],self.central['ycentroid']]
@@ -497,6 +588,16 @@ class Irdis(Instrument):
             #then calculate rotation as a function of time
                 self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
                 self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
+                #centre cube:
+                datal=simage.interpolation.shift(datal,
+                                                np.array(
+                                                    [
+                                                        0,
+                                                        self.shiftl[isci][1][0],
+                                                        self.shiftl[isci][0][0]
+                                                    ]
+                                                 )
+                                                )
                 #shift data to common reference frame
                 for i in range(data.shape[0]):
                     angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
@@ -512,54 +613,185 @@ class Irdis(Instrument):
             #then calculate rotation as a function of time
                 self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
                 self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
+                datar=simage.interpolation.shift(datar,
+                                                np.array(
+                                                    [
+                                                        0,
+                                                        self.shiftr[isci][1][0],
+                                                        self.shiftr[isci][0][0]
+                                                    ]
+                                                 )
+                                                )
                 for i in range(data.shape[0]):
                     angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
                     #then derotate each frame of each half of the detector
-                    self.derotate(datar[i,:,:],self.centre,angle) 
-                self.medianDerot=np.r_[self.medianDerot,
-                                       [simage.interpolation.shift(np.nanmedian(datal,axis=0),
-                                                                   [0,header['HIERARCH ESO INS1 DITH POSX'],
-                                                                    header['HIERARCH ESO INS1 DITH POSY']]),
-                                        simage.interpolation.shift(np.nanmedian(datar,axis=0),
-                                                                   [0,header['HIERARCH ESO INS1 DITH POSX']+self.shiftr[1],
-                                                                    header['HIERARCH ESO INS1 DITH POSY']+self.shiftr[0]])
+                    self.derotate(datar[i,:,:],self.centre,angle)
+                try:
+                    self.medianDerot=np.r_[self.medianDerot,
+                                           [np.nanmedian(datal,axis=0),
+                                            np.nanmedian(datar,axis=0)]
+                                          ]
+                    
+                    self.varDerot=np.r_[self.varDerot,
+                                        [(np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
+                                         (np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2]
                                         ]
-                                       ] #make sure the sign is right here (by inspection!!)
-                self.varDerot=np.r_[self.varDerot,
-                                    [simage.interpolation.shift((np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
-                                                                [0,header['HIERARCH ESO INS1 DITH POSX'],
-                                                                 header['HIERARCH ESO INS1 DITH POSY']]),
-                                     simage.interpolation.shift((np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2,
-                                                                [0,header['HIERARCH ESO INS1 DITH POSX']+self.shiftr[1],
-                                                                 header['HIERARCH ESO INS1 DITH POSY']+self.shiftr[0]])
-                                     ]
-                                    ]
+                except:
+                    self.medianDerot=np.array([np.nanmedian(datal,axis=0),
+                                               np.nanmedian(datar,axis=0)
+                                                 ]
+                                              )
+                    self.varDerot=np.array(
+                                           [(np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
+                                            (np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2]
+                                          )
+                    #simage.interpolation.shift(np.nanmedian(datal,axis=0),
+                                        #                           [0,header['HIERARCH ESO INS1 DITH POSX'],
+                                        #                            header['HIERARCH ESO INS1 DITH POSY']]),
+                                        #simage.interpolation.shift(np.nanmedian(datar,axis=0),
+                                        #                           [0,header['HIERARCH ESO INS1 DITH POSX']+self.shiftr[1],
+                                        #                            header['HIERARCH ESO INS1 DITH POSY']+self.shiftr[0]])
+                                        #]
+                                       #] #make sure the sign is right here (by inspection!!)
+                
+                                    #[simage.interpolation.shift((np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
+                                                                
+                                    #                            [0,header['HIERARCH ESO INS1 DITH POSX'],
+                                    #                             header['HIERARCH ESO INS1 DITH POSY']]),
+                                     #simage.interpolation.shift((np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2,
+                                     #                           [0,header['HIERARCH ESO INS1 DITH POSX']+self.shiftr[1],
+                                     #                            header['HIERARCH ESO INS1 DITH POSY']+self.shiftr[0]])
+                                     #]
+                                    #]
             #self.sciframes
             #isci+=1
 
 
         if self.mode=='IRD_SCI_CLI_OBJ':#'CI':
             self.CI()
-            print  self.finalNoDerot.shape
-#            plt.imshow(self.finalNoDerot,norm=cols.Normalize(vmin=0.1,vmax=1.))
-#            plt.show()
+            #print  self.finalNoDerot.shape
+            #plt.figure()
+            #plt.imshow(self.finalNoDerot,norm=cols.Normalize(vmin=0.1,vmax=1.))
+            #plt.figure()
+            #plt.imshow(self.finalDerot,norm=cols.Normalize(vmin=0.1,vmax=1.))
+            #plt.show()
         elif self.mode=='DPI':
             self.DPI()
         elif self.mode=='SDI':
             self.SDI()
         else:
             print 'IRDIS mode not recognised'
-            
+
+        self.writeFinalProducts()
+        return self.status
+
+    def writeFinalProducts(self,**kwargs):
+        """ Write out final data reduction products to single multi-extension fits file and to separate files """
+        hdu=fits.PrimaryHDU()
+        for key in eso_fits_keywords: #add important keywords from observed data
+            hdu.header.append((key,self.headers[0][key]))
+        hdu.header.append(("Pipeline","precision"))
+        hdu.header.append(("PipeAuth","P. Scicluna"))
+        hdu.header.append(("PipeVers",__version__))
+        hdu.header.append(("Flux factor",self.flux.flux,"Divide images by this amount to convert to contrast"))
+        hdu.header.append(("COMMENT",self.__str__())) #full list of files and associations used to produce this dataset
+        hdulist=fits.HDUList(hdu)
+        hdu=fits.ImageHDU(self.finalNoDerot,name="Image (No Derotation)")
+        hdulist.append(hdu)
+        #How should this be structured?
+        if self.mode=='IRD_SCI_CLI_OBJ':#'CI':
+            #CI - required outputs, finalNoDerot,finalDerot,ADI,fluxcal,photcal, uncertainty frames
+            hdu=fits.ImageHDU(self.finalvarNoDerot, name="variance (no derotation)")
+            hdulist.append(hdu)
+            if self.rot=='PUPIL':
+                #Derotated images
+                hdulist.append(fits.ImageHDU(self.finalDerot,name="Image (derotated)"))
+                hdulist.append(fits.ImageHDU(self.finalVarDerot, name="variance (derotated)"))
+            pass
+        elif self.mode=='DPI':
+            pass
+        elif self.mode=='SDI':
+            pass
+        logtime = str(datetime.datetime.now()).replace(" ","_")
+        hdulist.writeto(self.outfile+"_"+logtime+"_prod.fits")
+        pass
+    
+
+    def writeInterProd(self,**kwargs):
+        """ Write out intermediate products """
+        #What intermediate products are required?
+        #Master dark + unc
+        #Master flat + unc
+        #Bad-pixel map
+        #Dark/flat corrected cubes?
+        #Bad-pixel corrected cubes?
+        #Derotated cubes?
+        #Collapsed/aligned cubes?
+        #Other calibrations (Flux frames, phot.cals. etc) after calibration
+        #Try to make this flexible where you pass info in and it gets turned into a fits file
+        #hdulist.writeto(self.outfile+"_interprod.fits")
+        pass
+    
     def sciFlux(self,**kwargs):
         ''' 
         Take non-coronographic observation to compute contrast and facilitate flux calibration
         '''
         #read flux file and calibrate it
-        fluxframes,fluxhdr=self.readdata(self.flux)
+        filename=self.flux.datadir+self.flux.obs_main[0][:][1]+".fits"
+        fluxframes,fluxhdr=self.readdata(filename)
+
+        #scale for ND filters #and exposure time
+        filt=fluxhdr['HIERARCH ESO INS COMB IFLT'].split('_')[1].strip(' ') #self.optics['filt'][2].split('_')[1].strip(' ')#
+        ND=fluxhdr['HIERARCH ESO INS4 FILT2 NAME'].split('_')[1].strip(' ')
+        print ND
+        ND=np.int(np.float64(ND))
+        #fluxframes=fluxframes * 10**(ND) #very approximate, try to get the ND transmission curves.
+        #Scrape filter curves from https://www.eso.org/sci/facilities/paranal/instruments/sphere/inst/filters/*.dat
+        #then construct look-up table with approximate throughput of each filter/ND combination
+        #read in lookup table
+        path=os.path.abspath(__file__)
+        print os.path.dirname(path)
+        with open(os.path.dirname(path)+"/IRDIS_filter_throughputs.pkl","rb") as f:
+            tab=pickle.load(f)
+            tp=tab[filt][ND]
+            print tp
+            fluxframes=fluxframes / tp
         #extract point-source counts and peak counts for target
-        
-        #scale for ND filters and exposure time
-        pass
+        #check for multiple frames:
+        if len(fluxframes.shape) == 3:
+            masterflux=np.median(fluxframes,axis=0)
+        else:
+            masterflux=fluxframes
+
+        mean,median,std=astats.sigma_clipped_stats(masterflux,sigma=3.0)
+        sourcefinders=pu.DAOStarFinder( #data[500:550,450:500] - median, # assumes datacube #[500:550,450:500]
+                           fwhm = 2.0,
+                           threshold=std#,
+                           #sharplo=0.3,
+                           #sharphi=0.5,
+                           #roundhi=0.3,
+                           #roundlo=-0.3
+                           )            
+        #self.findsources(sourcefinders,masterflux,100
+        sources=sourcefinders.find_stars(masterflux[400:600,400:600] - median#data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,#daofind(data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,
+                                         #     np.int(guess[1])-window:np.int(np.ceil(guess[1]))+window] - median)
+        )
+        sources.sort('flux')
+        sources.pprint(max_lines=-1)
+        peakl=sources[-1]['peak']
+        sources=sourcefinders.find_stars(masterflux[400:600,1350:1550] - median#data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,#daofind(data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,
+                                         #     np.int(guess[1])-window:np.int(np.ceil(guess[1]))+window] - median)
+        )
+        sources.sort('flux')
+        sources.pprint(max_lines=-1)
+        peakr=sources[-1]['peak']
+        peak=0.5*(peakl+peakr)
+        #print peak
+        self.flux.flux=peak
+        #plt.imshow(masterflux[400:600,1350:1550] - median,#data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,
+                   #         np.int(guess[1])-window:np.int(np.ceil(guess[1]))+window] - median,
+        #               origin='lower')
+        #plt.show()
 
     def photCal(self,**kwargs):
         '''
@@ -568,6 +800,8 @@ class Irdis(Instrument):
         pass
 
     def readdata(self,filename,**kwargs):
+        #print filename
+        
         hdu=fits.open(filename)
         cube=hdu[0].data #extract data itself
         exptime=hdu[0].header['EXPTIME']

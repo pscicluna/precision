@@ -4,12 +4,14 @@ import astropy.io.fits as fits
 import math as mt
 from scipy.signal import medfilt2d
 from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
+import datetime
+from __init__ import __version__ #hack, replace later
 #from instrument import Instrument
 
 class Instrument(object):
     #base class to be inherited by instrument-specific classes with details and redution routines, possibly simulation routines too
     """Generic instrument class. Contains things that all routines will need (e.g. dark subtraction, flat fielding, sky subtraction, bad pixel identification etc) while specific reduction routines are provided in extension classes. As much as possible, uncertainty tracking should be included here. """
-    def __init__(self,scifiles=None,badpixfile=None,skyfile=None,flatfiles=None,darkfiles=None,mode=None,optics=None):
+    def __init__(self,scifiles=None,badpixfile=None,skyfile=None,flatfiles=None,darkfiles=None,mode=None,optics=None,**kwargs):
         self.scifiles=scifiles
         self.badpixfile=badpixfile
         self.skyfile=skyfile
@@ -24,19 +26,19 @@ class Instrument(object):
     def __str__(self):
         raise NotImplementedError("Please implement this in your subclass")
 
-    def setbadpixelmap(self):
+    def setbadpixelmap(self,**kwargs):
         hdu=fits.open(badpixfile)
         self.badpixmap=hdu[0].data
     
-    def setskyframe(self):
+    def setskyframe(self,**kwargs):
         hdu=fits.open(self.skyfile)
         self.skyframe=hdu[0].data
     
-    def setbadpix(self,sciframe,badpixmap):
+    def setbadpix(self,sciframe,badpixmap,**kwargs):
         #set all bad pixels to NaN
         sciframe[badpixmap==1]=float('Nan') #does this work?
     
-    def badpixcorrect(self,data=None):
+    def badpixcorrect(self,data=None,**kwargs):
         if data is None:
             data=self.sciframes
             recopy=True
@@ -61,22 +63,41 @@ class Instrument(object):
         else:
             return data
 
-    def readobservations(self):
+    def readobservations(self,**kwargs):
         #read in all the science frames and compile a list of them.
         self.obslist=[]
         for f in self.scifiles:
             self.obslist.append(fits.open(f))
     
-    def skysub(self,sciframe,skyframe):
+    def skysub(self,sciframe,skyframe,**kwargs):
         sciframe-=skyframe
         return sciframe
 
-    def align(self):
+    def align(self,**kwargs):
         #align exposures prior to medianing
 #        self.alignedframes=simage.interpolation.shift(
         pass
     
-    def derotate(self):
+    def derotate(self,**kwargs):
+        pass
+
+    def logger(self,msg,**kwargs):
+        """
+        Writes logging information to a file
+
+        Inputs:
+        msg      The message to be written - a string or sequence of strings
+        logfile  A file-like object to which msg should be written
+
+        Outputs:
+        None
+        """
+        logtime = str(datetime.datetime.now())
+        outstr = logtime+": "+msg
+        self.logfile.write(outstr)
+        #raise NotImplementedError("Pipeline logging is not implemented yet")
+
+    def updateHeader(self,**kwargs):
         pass
 
 #future classes, they're here as reminders for now, everything will get moved around later as structure starts to become clearer and I get data to work on
