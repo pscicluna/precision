@@ -19,6 +19,7 @@ from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 import skimage.transform as tf
 import pickle
 import os
+import datetime
 from __init__ import __version__ #hack, replace later
 
 eso_fits_keywords = ["ORIGIN",
