@@ -433,7 +433,7 @@ class Irdis(Instrument):
         self.medianDerot=np.array([])
         self.varNoDerot=np.array([])
         self.varDerot=np.array([])
-        self.headers=np.array([])
+        self.headers=[]#np.array([])
         isci=-1
         print self.science[0][1]
         #exit()
@@ -548,7 +548,7 @@ class Irdis(Instrument):
             print np.max(self.medianNoDerot)
             #plt.show()
             #exit()
-            self.headers=np.r_[self.headers,header]
+            self.headers.append(header)
             #print header
             print self.medianNoDerot.shape
             #if isci == 0:
