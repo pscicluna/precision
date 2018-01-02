@@ -6,16 +6,13 @@ PRECISION is designed for use in reducing astronomical infrared observations. It
 
 * Quick summary
 * Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* <!-- [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo) -->
 
 ### How do I get set up? ###
 
 * Summary of set up
 * Configuration
-* Dependencies - numpy, scipy, astropy, scikit-image, photutils, AGPy (hopefully I can integrate that directly)
-* Database configuration
-* How to run tests
-* Deployment instructions
+* Dependencies - numpy, scipy, astropy, scikit-image, photutils
 
 ### Contribution guidelines ###
 
@@ -27,4 +24,3 @@ PRECISION is designed for use in reducing astronomical infrared observations. It
 ### Who do I talk to? ###
 
 * Repo owner or admin - me, Peter Scicluna
-* Other community or team contact
