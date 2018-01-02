@@ -312,14 +312,27 @@ class Irdis(Instrument):
                                             )
             #split channels and align
             datal,datar=self.splitchannels(data)
-            chanshift=register_images(datal[0],datar[0],usamp=10.)
-            datar=simage.interpolation.shift(datar,[0,chanshift[0],chanshift[1]])
+            #Centres were found before by CI algorithm, so shift each cube
+            datal=simage.interpolation.shift(datal,
+                                             np.array([0,
+                                                       self.shiftl[isci][1][0],
+                                                       self.shiftl[isci][0][0]
+                                             ])#[0,self.shiftl[isci][0][
+            )
+            datar=simage.interpolation.shift(datar,
+                                             np.array([0,
+                                                       self.shiftr[isci][1][0],
+                                                       self.shiftr[isci][0][0]
+                                             ])
+            )
+            #chanshift=register_images(datal[0],datar[0],usamp=10.)
+            #datar=simage.interpolation.shift(datar,[0,chanshift[0],chanshift[1]])
             #subtract speckle image (non-derotated median frames)
             datal=datal-self.finalNoDerot
             datar=datar-self.finalNoDerot
             #derotate channels
-            centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
-            self.findcentre(self.medianNoDerot[isci][0],centreGuess)
+            #centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
+            #self.findcentre(self.medianNoDerot[isci][0],centreGuess)
 #            self.centre=[self.central['xcentroid'],self.central['ycentroid']]                
             #then calculate rotation as a function of time
             self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
@@ -329,9 +342,9 @@ class Irdis(Instrument):
                     #then derotate each frame of each half of the detector
                 self.derotate(datal[i,:,:],self.centre,angle) #simage.interpolation.rotate(datal[i,:,:],angle,reshape=False) #somehow I must be able to pass in the centre of rotation...I guess I could also shift it so that it is centred correctly first.
                 
-            centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
-            self.findcentre(self.medianNoDerot[isci][1],centreGuess)
-            self.centre=[self.central['xcentroid'],self.central['ycentroid']]
+            #centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
+            #self.findcentre(self.medianNoDerot[isci][1],centreGuess)
+            #self.centre=[self.central['xcentroid'],self.central['ycentroid']]
             #then calculate rotation as a function of time
             self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
             self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
@@ -340,25 +353,34 @@ class Irdis(Instrument):
                     #then derotate each frame of each half of the detector
                 self.derotate(datar[i,:,:],self.centre,angle)
             #now build ADI medians for each dither position
-            self.medianADI=np.r_[self.medianADI,
-                                 [np.nanmedian(datal,axis=0),np.nanmedian(datar,axis=0)]
-                                 ]
-            self.varADI=np.r_[self.varADI,
-                              [(np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
-                               (np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2
-                               ]
-                              ]
+            try:
+                self.medianADI=np.r_[self.medianADI,
+                                     [np.nanmedian(datal,axis=0),np.nanmedian(datar,axis=0)]
+                ]
+                self.varADI=np.r_[self.varADI,
+                                  [(np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
+                                   (np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2
+                                  ]
+                ]
+            except:
+                self.medianADI=np.array([np.nanmedian(datal,axis=0),np.nanmedian(datar,axis=0)])
+                self.varADI = np.array(
+                                       [
+                                           (np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
+                                           (np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2
+                                        ]
+                                       )
             isci+=1
         #average all frames ('cADI') 
-        self.finalADI=np.mean(self.medianADI,axis=0) #produces L- and R- channel images
-        self.finalADI=np.mean(self.finalADI,axis=0) #combine both channels
-        self.finalVarADI=np.mean(self.varADI,axis=0)         #small number approximation - 
-        self.finalVarADI=(np.mean(self.finalVarADI,axis=0) / #variance on mean = mean of variances / N
-                            (2*self.varDerot.shape[0]))
+        self.finalADI=np.mean(self.medianADI,axis=0) #produces L- and R- channel images and combines
+        #self.finalADI=np.mean(self.finalADI,axis=0) #combine both channels
+        #self.finalVarADI=np.mean(self.varADI,axis=0)         #small number approximation - 
+        self.finalVarADI=(np.mean(self.varADI,axis=0) / #variance on mean = mean of variances / N
+                            (self.varADI.shape[0]))
 
         if mode=='SDI':
-            self.finalSADI=np.mean(self.medianSADI,axis=0)    #produces L- and R- channel images
-            self.finalSADI=self.finalSADI[1]-self.finalSADI[0]#
+            self.finalSADI=np.mean(self.medianSADI[0:-1:2,:,:],axis=0) - np.mean(self.medianSADI[1::2,:,:],axis=0)    #produces L- and R- channel images and subtracts them
+            #self.finalSADI=self.finalSADI[1]-self.finalSADI[0]#
             self.finalVarSADI=np.mean(self.varSADI,axis=0)    #small number approximation - 
             self.finalVarSADI=np.sum(self.finalVarSADI,axis=0)#variance on mean = mean of variances / N
         pass
