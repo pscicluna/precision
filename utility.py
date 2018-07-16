@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 #import photutils as pu
 import glob
@@ -31,19 +33,19 @@ def findassociations(dirname,**kwargs):
             a=parseassociation(f)
             if a['category'] == 'IRD_SCI_CLI':
                 #data can be reduced
-                print 'File ',f,' will be reduced'
+                print('File ',f,' will be reduced')
                 observations.append(a)
             else:
-                print 'Mode ',a['category'],' is not supported yet'
-                print 'skipping file ',f
+                print('Mode ',a['category'],' is not supported yet')
+                print('skipping file ',f)
         elif f.startswith('NACO'):
-            print 'Reduction of NACO observations is not implemented yet'
-            print 'Skipping file ',f
+            print('Reduction of NACO observations is not implemented yet')
+            print('Skipping file ',f)
         elif f.startswith('VISIR'):
-            print 'Reduction of VISIR observations is not implemented yet'
-            print 'Skipping file ',f
+            print('Reduction of VISIR observations is not implemented yet')
+            print('Skipping file ',f)
         else:
-            print 'Skipping file ',f
+            print('Skipping file ',f)
     obs_list=[]
     for observation in observations:
         obs_list.append(Observation(observation))
@@ -71,8 +73,8 @@ def parseassociation(filename,**kwargs):
         return assocs
 #        pass
     else:
-        print 'Currently only IRDIS science data are supported'
-        print 'skipping file ',filename
+        print('Currently only IRDIS science data are supported')
+        print('skipping file ',filename)
         return
 #    for calib in calibs.childNodes[1:-1:2]: #pull out each calibration and identify which file does which thing - some need to be generalised so they don't just refer to CLI
 #        if calib.attributes['category'].endswith('DARK'): #dark frames
@@ -183,10 +185,10 @@ def spherefitssorter(directory,**kwargs):
                     )
                 iobs+=1
         hdu.close
-    print len(observations)
+    print(len(observations))
     for i in range(iobs):
-        print observations[i]
-        print ' '
+        print(observations[i])
+        print(' ')
     return observations
 
         #what date?

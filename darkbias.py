@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 #routines for dark and bias subtraction
 import numpy as np
 import astropy.io.fits as fits
@@ -42,12 +44,12 @@ def loaddarks(darkframes=None,darkdir='',**kwargs):
     return darks
 
 def makemasterdark(darkframes=None,computevariance=True,computeRON=False,**kwargs):
-    print darkframes
+    print(darkframes)
     #take many dark frames as input, then 
     if darkframes is not None:
         #check what has been passed
         if isinstance(darkframes,Observation):
-            print darkframes.obs_main[0][:][1],darkframes.datadir
+            print(darkframes.obs_main[0][:][1],darkframes.datadir)
             darkframes=loaddarks(darkframes.obs_main[0][:][1],darkdir=darkframes.datadir)
             
             #for f in darkframes.obs_main:

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 import scipy.ndimage as simage
 import astropy.io.fits as fits
@@ -184,9 +186,9 @@ class Irdis(Instrument):
         return sources,window#sources
     
     def findcentre(self,data,guess,interact=True,window=60,**kwargs):
-        print data.shape,guess
-        print np.int(guess[0])
-        print np.int(np.ceil(guess[1]))
+        print(data.shape,guess)
+        print(np.int(guess[0]))
+        print(np.int(np.ceil(guess[1])))
         #help(np.int(np.ceil(guess[1])) + window)
         #help(data)
         mean,median,std=astats.sigma_clipped_stats(data,sigma=3.0)
@@ -411,7 +413,7 @@ class Irdis(Instrument):
         pass
 
     def makesky(self,**kwargs):
-        print self.sky
+        print(self.sky)
         if len(self.sky.obs_main) == 1:
             f=self.sky.datadir+self.sky.obs_main[0][:][1]+'.fits'
             data,header=self.readdata(f)
@@ -457,7 +459,7 @@ class Irdis(Instrument):
         self.varDerot=np.array([])
         self.headers=[]#np.array([])
         isci=-1
-        print self.science[0][1]
+        print(self.science[0][1])
         #exit()
         self.centrel=[]
         self.centrer=[]
@@ -567,12 +569,12 @@ class Irdis(Instrument):
                                      )
 
             #plt.imshow(self.medianNoDerot[0,:,:])
-            print np.max(self.medianNoDerot)
+            print(np.max(self.medianNoDerot))
             #plt.show()
             #exit()
             self.headers.append(header)
             #print header
-            print self.medianNoDerot.shape
+            print(self.medianNoDerot.shape)
             #if isci == 0:
             centreGuess=[header['HIERARCH ESO SEQ CORO XC'],header['HIERARCH ESO SEQ CORO YC']]
             self.findcentre(self.medianNoDerot[isci*2],centreGuess,interact=True)
@@ -580,10 +582,10 @@ class Irdis(Instrument):
             #centreGuess.append([header['HIERARCH ESO SEQ CORO XC'],header['HIERARCH ESO SEQ CORO YC']])
             self.findcentre(self.medianNoDerot[isci*2+1],centreGuess,interact=True)
             self.centrer.append(self.centre)#[self.central['xcentroid'],self.central['ycentroid']]
-            print self.centrel[isci],self.centrer[isci]
+            print(self.centrel[isci],self.centrer[isci])
             self.shiftl.append(np.array(511 - self.centrel[isci]))
             self.shiftr.append(np.array(511 - self.centrer[isci]))
-            print self.shiftl[isci],self.shiftl[isci][0],self.shiftl[isci][1][0]
+            print(self.shiftl[isci],self.shiftl[isci][0],self.shiftl[isci][1][0])
             #tform=tf.SimilarityTransform(scale=1,rotation=0,translation=(self.shiftl[isci][1],self.shiftl[isci][0]))
             self.medianNoDerot[isci*2]=simage.interpolation.shift(self.medianNoDerot[isci*2],np.array([self.shiftl[isci][1][0],self.shiftl[isci][0][0]]))#tf.warp(self.medianNoDerot[isci*2 -1],tform)# [yshift, xshift]
             self.medianNoDerot[isci*2+1]=simage.interpolation.shift(self.medianNoDerot[isci*2 + 1],np.array([self.shiftr[isci][1][0],self.shiftr[isci][0][0]]))
@@ -595,7 +597,7 @@ class Irdis(Instrument):
             #print simage.interpolation.shift(self.medianNoDerot[1],self.shiftr)
             #print self.medianNoDerot[1]
             #print self.shiftr
-            print isci*2,isci*2+1
+            print(isci*2,isci*2+1)
             temp=self.medianNoDerot[isci*2]+self.medianNoDerot[isci*2+1]#simage.interpolation.shift(self.medianNoDerot[1],[self.shiftr[1],self.shiftr[0]])
             
             #now derotate cube if pupil stabilised
@@ -703,7 +705,7 @@ class Irdis(Instrument):
         elif self.mode=='SDI':
             self.SDI()
         else:
-            print 'IRDIS mode not recognised'
+            print('IRDIS mode not recognised')
 
         self.writeFinalProducts()
         return self.status
@@ -769,18 +771,18 @@ class Irdis(Instrument):
         #scale for ND filters #and exposure time
         filt=fluxhdr['HIERARCH ESO INS COMB IFLT'].split('_')[1].strip(' ') #self.optics['filt'][2].split('_')[1].strip(' ')#
         ND=fluxhdr['HIERARCH ESO INS4 FILT2 NAME'].split('_')[1].strip(' ')
-        print ND
+        print(ND)
         ND=np.int(np.float64(ND))
         #fluxframes=fluxframes * 10**(ND) #very approximate, try to get the ND transmission curves.
         #Scrape filter curves from https://www.eso.org/sci/facilities/paranal/instruments/sphere/inst/filters/*.dat
         #then construct look-up table with approximate throughput of each filter/ND combination
         #read in lookup table
         path=os.path.abspath(__file__)
-        print os.path.dirname(path)
+        print(os.path.dirname(path))
         with open(os.path.dirname(path)+"/IRDIS_filter_throughputs.pkl","rb") as f:
             tab=pickle.load(f)
             tp=tab[filt][ND]
-            print tp
+            print(tp)
             fluxframes=fluxframes / tp
         #extract point-source counts and peak counts for target
         #check for multiple frames:
@@ -848,7 +850,7 @@ class Irdis(Instrument):
                       self.headers[0]['HIERARCH ESO DET SEQ1 DIT'] + '_' + 
                       self.headers[0]['HIERARCH ESO OBS START'] +
                       '.fits')
-        print 'Writing reduced data to file ',self.outfile
+        print('Writing reduced data to file ',self.outfile)
         if self.interProd: #write intermediate products too
             pass
         fits.writeto(self.outfile ,self.finalNoDerot,self.outheader)

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 #routines for flatfielding, etc
 import numpy as np
 import astropy.io.fits as fits
@@ -7,7 +9,7 @@ from utility import Observation
 
 def loadflats(flatframes=None,masterdark=None,flatdir='',**kwargs):
     flats=np.array([])
-    print flatframes
+    print(flatframes)
     if isinstance(flatframes,basestring):
         f=flatdir+flatframes+".fits"
         hdu=fits.open(f)

@@ -47,17 +47,18 @@ class Instrument(object):
         if (len(data.shape) == 3): #datacube
             for i in range(data.shape[0]):
                 #make sure to test how many times the windowing should be repeated - adding many small windows doens't cost too much - needs much optimisation though!
-                mask=self.badpixmap#np.logical_or(self.badpixmap,np.isnan(data[i,:,:]))
+                #mask=self.badpixmap#np.logical_or(self.badpixmap,np.isnan(data[i,:,:]))
                 #print mask.shape
                 
                 #data[i,self.badpixmap]=medfilt2d(data[i,:,:],25)[self.badpixmap]
-                data[i,mask]=medfilt2d(data[i,:,:],9)[mask]
-                data[i,mask]=medfilt2d(data[i,:,:],5)[mask]
-                data[i,:,:] = interpolate_replace_nans(data[i,:,:],Gaussian2DKernel(stddev=1))
+                #data[i,mask]=medfilt2d(data[i,:,:],9)[mask]
+                #data[i,mask]=medfilt2d(data[i,:,:],5)[mask]
+                data[i,:,:] = interpolate_replace_nans(data[i,:,:],Gaussian2DKernel(stddev=1)) #this is faster (and so far the fastest method I have found). It was basicaclly doing the same as medfilt2d but better and faster, as far as I can tell. Hopefully further tests will work out okay.
                 #exit()
         else: #only one image
             #data[self.badpixmap]=medfilt2d(data,25)[self.badpixmap]
-            data[self.badpixmap]=medfilt2d(data,5)[self.badpixmap]
+            #data[self.badpixmap]=medfilt2d(data,5)[self.badpixmap]
+            data[i,:,:] = interpolate_replace_nans(data[i,:,:],Gaussian2DKernel(stddev=1))
         if recopy:
             self.sciframes=data
         else:
