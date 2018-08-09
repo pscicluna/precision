@@ -129,7 +129,13 @@ class Irdis(Instrument):
             try:
                 self.sky=observation.cals['IRD_SCI_CLI_SKY']  #or does this need to be 'IRD_SKY_BG_RAW'? #Sky
             except KeyError:
-                self.sky=observation.cals['IRD_SKY_BG_RAW']  #or does this need to be 'IRD_SKY_BG_RAW'? #Sky
+                try:
+                    self.sky=observation.cals['IRD_SKY_BG_RAW']  #or does this need to be 'IRD_SKY_BG_RAW'? #Sky
+                except KeyError:
+                    print("No sky frame found. Please check your association tree contains all required calibrations")
+                    print("Do not continue with reduction!")
+                    #return
+                
         try:
             self.flux=observation.cals['IRD_FLUX_CALIB_CORO_RAW'] #flux
         except KeyError:
