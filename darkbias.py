@@ -23,7 +23,7 @@ class Dark(object):
 def loaddarks(darkframes=None,darkdir='',**kwargs):
     darks=np.array([])
     #print darkdir,darkframes
-    if isinstance(darkframes,basestring):
+    if isinstance(darkframes,str) or isinstance(darkframes,bytes):
         f=darkdir+darkframes+".fits"
         hdu=fits.open(f)
         #remember to add exposure time info!
@@ -55,7 +55,7 @@ def makemasterdark(darkframes=None,computevariance=True,computeRON=False,**kwarg
             #for f in darkframes.obs_main:
             #    pass
             pass
-        elif isinstance(darkframes[0],basestring):
+        elif isinstance(darkframes[0],str):
             #contains strings, need to read files
             #masterdark=np.nanmedian(loaddarks(darkframes),axis=0)
             darkframes=loaddarks(darkframes)

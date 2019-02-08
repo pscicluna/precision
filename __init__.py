@@ -25,7 +25,7 @@ from . import darkbias
 from . import irdis
 from . import utility
 
-version_info = (0,2,1) #version, point, revision
+version_info = (0,2,2) #version, point, revision
 __version__ = "v"+'.'.join([str(i) for i in version_info])
 
 __all__=["flatfield", "irdis","darkbias","utility"]

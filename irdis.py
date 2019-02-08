@@ -176,8 +176,10 @@ class Irdis(Instrument):
                             np.int(guess[1])-window:np.int(np.ceil(guess[1]))+window] - median,
                        origin='lower')
             plt.show(block=False)
-            #try:
-            a=raw_input('What is the ID of the source at the centre of rotation?\n')
+            try:
+                a=raw_input('What is the ID of the source at the centre of rotation?\n')
+            except NameError:
+                a=input('What is the ID of the source at the centre of rotation?\n')
             plt.close()
             #except ValueError:
             if int(a) < 0:

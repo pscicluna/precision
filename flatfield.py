@@ -10,7 +10,7 @@ from .utility import Observation
 def loadflats(flatframes=None,masterdark=None,flatdir='',**kwargs):
     flats=np.array([])
     print(flatframes)
-    if isinstance(flatframes,basestring):
+    if isinstance(flatframes,str):
         f=flatdir+flatframes+".fits"
         hdu=fits.open(f)
         #remember to add exposure time info!
@@ -50,7 +50,7 @@ def makemasterflat(flatframes=None,masterdark=None,computevar=True,method='med'
             #for f in darkframes.obs_main:
             #    pass
             pass
-        elif isinstance(flatframes[0],basestring):
+        elif isinstance(flatframes[0],str):
             flatframes=loadflats(flatframes,masterdark)
             #contains strings, need to read files    
         elif isinstance(flatframes[0],np.ndarray):
