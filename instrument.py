@@ -5,7 +5,10 @@ import math as mt
 from scipy.signal import medfilt2d
 from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
 import datetime
-from __init__ import __version__ #hack, replace later
+from .__init__ import __version__ #hack, replace later
+#from . import __version__
+
+#print(__version__)
 #from instrument import Instrument
 
 class Instrument(object):

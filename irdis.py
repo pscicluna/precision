@@ -5,25 +5,26 @@ import scipy.ndimage as simage
 import astropy.io.fits as fits
 import astropy.stats as astats
 import math as mt
-from instrument import Instrument
+from .instrument import Instrument
 #import astropysics.ccd as ccd
 import photutils as pu
 #import skimage as skim
 #from skimage.transform import hough_circle
 #from skimage.util import img_as_ubyte
-import darkbias
-import flatfield
-from image_registration.register_images import register_images
+from . import darkbias
+from . import flatfield
+#from image_registration.register_images import register_images
 #from skimage.feature import peak_local_max, canny
 import matplotlib.pyplot as plt
 import matplotlib.colors as cols
 from astropy.convolution import interpolate_replace_nans, Gaussian2DKernel
-import skimage.transform as tf
+#import skimage.transform as tf
 import pickle
 import os
 import datetime
-from __init__ import __version__ #hack, replace later
+from .__init__ import __version__ #hack, replace later
 
+#print(__version__)
 eso_fits_keywords = ["ORIGIN",
                      "DATE",
                      "TELESCOP",

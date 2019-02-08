@@ -3,7 +3,7 @@ from __future__ import print_function
 #routines for dark and bias subtraction
 import numpy as np
 import astropy.io.fits as fits
-from utility import Observation
+from .utility import Observation
 
 class Dark(object):
     ''' 

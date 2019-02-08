@@ -4,8 +4,8 @@ from __future__ import print_function
 import numpy as np
 import astropy.io.fits as fits
 from astropy.stats import sigma_clip
-from darkbias import makemasterdark
-from utility import Observation
+from .darkbias import makemasterdark
+from .utility import Observation
 
 def loadflats(flatframes=None,masterdark=None,flatdir='',**kwargs):
     flats=np.array([])
