@@ -789,7 +789,7 @@ class Irdis(Instrument):
         path=os.path.abspath(__file__)
         print(os.path.dirname(path))
         with open(os.path.dirname(path)+"/IRDIS_filter_throughputs.pkl","rb") as f:
-            tab=pickle.load(f)
+            tab=pickle.load(f, encoding='latin1', fix_imports=True)
             tp=tab[filt][ND]
             print(tp)
             fluxframes=fluxframes / tp
