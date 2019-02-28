@@ -41,6 +41,15 @@ def loaddarks(darkframes=None,darkdir='',**kwargs):
             darks=np.r_[darks,hdu[0].data]
             darks=np.r_[darks,hdu[0].data/hdu[0].header['EXPTIME']] #counts/s ?
             hdu.close()
+    elif isinstance(darkframes, Observation):
+#        try:
+            for i in range(len(darkframes.obs_main)):
+                f = darkframes.obs_main[i][1]
+                hdu=fits.open(f)
+                darks=np.r_[darks,hdu[0].data]
+                darks=np.r_[darks,hdu[0].data/hdu[0].header['EXPTIME']] #counts/s ?
+                hdu.close()
+#        except: #something wrong with the loop, probably because there's only one file
     return darks
 
 def makemasterdark(darkframes=None,computevariance=True,computeRON=False,**kwargs):

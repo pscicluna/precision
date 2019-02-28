@@ -8,7 +8,7 @@ from .darkbias import makemasterdark
 from .utility import Observation
 
 def loadflats(flatframes=None,masterdark=None,flatdir='',**kwargs):
-    flats=np.array([])
+    flats=[] #np.array([])
     print(flatframes)
     if isinstance(flatframes,str):
         f=flatdir+flatframes+".fits"
@@ -31,13 +31,35 @@ def loadflats(flatframes=None,masterdark=None,flatdir='',**kwargs):
                 for i in range(hdu[0].data.shape[0]):
                     median=np.nanmedian(hdu[0].data[i,:,:])
                     flat=(hdu[0].data[i,:,:]-masterdark)/median
-                    flats=np.r_[flats,flat]
+                    flats.append(flat)#=np.r_[flats,flat]
             else:
                 median=np.nanmedian(hdu[0].data)
                 flat=((hdu[0].data-masterdark)/median)
-                flats=np.r_[flats,flat]#hdu[0].data] #(hdu[0].data/median) #needs revision in case of datacube
+                flats.append(flat)#=np.r_[flats,flat]#hdu[0].data] #(hdu[0].data/median) #needs revision in case of datacube
         hdu.close()
-    return flats
+    elif isinstance(flatframes, Observation):
+#        try:
+            for i in range(len(flatframes.obs_main)):
+                f = flatframes.datadir + flatframes.obs_main[i][1] + ".fits"
+                hdu=fits.open(f)
+                if masterdark is None: #check to see if dark subtraction has been requested
+                    masterdark = np.zeros_like(hdu[0].data)
+                if (len(hdu[0].data.shape) == 3): #it's a cube!
+                    #            flat=np.zeros([hdu[0].data.shape])
+                    print(hdu[0].data.shape)
+                    for i in range(hdu[0].data.shape[0]):
+                        median=np.nanmedian(hdu[0].data[i,:,:])
+                        flat=(hdu[0].data[i,:,:]-masterdark)/median
+                        print(np.array(flats).shape, np.array(flat).shape)
+                        flats.append(flat)#=np.r_[flats,flat]
+                else:
+                    median=np.nanmedian(hdu[0].data)
+                    flat=((hdu[0].data-masterdark)/median)
+                    flats.append(flat)#=np.r_[flats,flat]#hdu[0].data] #(hdu[0].data/median) #needs revision in case of datacube
+                hdu.close()
+#        except: #something wrong with the loop, probably because there's only one file
+    #exit()    
+    return np.array(flats)
 
 def makemasterflat(flatframes=None,masterdark=None,computevar=True,method='med'
                    ,computebadpix=True,sig=5.0,**kwargs):
@@ -46,7 +68,7 @@ def makemasterflat(flatframes=None,masterdark=None,computevar=True,method='med'
         if isinstance(flatframes,Observation):
             if flatframes.cals is not None:
                 flatdark,flatdarkvar,RON=makemasterdark(flatframes.cals['IRD_DARK'])
-            flatframes=loadflats(flatframes.obs_main[0][:][1],flatdark,flatdir=flatframes.datadir)
+            flatframes=loadflats(flatframes,flatdark,flatdir=flatframes.datadir)
             #for f in darkframes.obs_main:
             #    pass
             pass
