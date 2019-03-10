@@ -166,11 +166,10 @@ class Irdis(Instrument):
         return "IRDIS mode: %s science data: %s sky: %s flux: %s flats: %s darks: %s options: %s" % (self.mode, self.science, self.sky, self.flux, self.flats, self.darks, self.options)
 
     def findSources(self,sourcefinder,data,window,guess,median,interact=True,**kwargs):
-        sources=sourcefinder.find_stars(data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,#daofind(data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,
+        sources=sourcefinder.find_stars(data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,
                                               np.int(guess[1])-window:np.int(np.ceil(guess[1]))+window] - median)
         sources.sort('flux')
         if interact:
-#            print sources
             sources.pprint(max_lines=-1)
             plt.imshow(data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,
                             np.int(guess[1])-window:np.int(np.ceil(guess[1]))+window] - median,
@@ -181,14 +180,8 @@ class Irdis(Instrument):
             except NameError:
                 a=input('What is the ID of the source at the centre of rotation?\n')
             plt.close()
-            #except ValueError:
             if int(a) < 0:
-                #plt.close()
                 sources,new_window=self.findSources(sourcefinder,data,int(1.5*window),guess,median)
-                #sources.pprint(max_lines=-1)
-                #plt.imshow(data[np.int(guess[0])-window:np.int(np.ceil(guess[0]))+window,
-                #                np.int(guess[1])-window:np.int(np.ceil(guess[1]))+window] - median)
-                #plt.show(block=False)
             else:
                 b=(sources['id'] == int(a))
                 return sources[:][b],window
@@ -265,26 +258,19 @@ class Irdis(Instrument):
         return data[:,:,0:1024],data[:,:,1024:2048]
 
     def derotate(self,data,centre,angle,**kwargs):
-        #pad image so that centre is at the centre of the array
-        #padX=[data.shape[1] - centre[0],centre[0]] #check which is row and column in image and centre routines! - this doesn't work for non-integer cases. Have to do some other shifting I guess
-        #padY=[data.shape[0] - centre[1],centre[1]]
-        #print padX,padY
-        #datap=np.pad(data,[padY,padX],'constant')
+        """ Function to derotate images. Assumes images are already centred """
         #derotate
-        data=simage.interpolation.rotate(data,angle)#,reshape=False)#[padY[0]:-padY[1],padX[0]-padX[1]]
+        data=simage.interpolation.rotate(data,angle)
 
     def CI(self,**kwargs): #test on VY CMa
-        self.finalNoDerot=np.mean(self.medianNoDerot,axis=0) #produces L- and R- channel images
-        #self.finalNoDerot=np.mean(self.finalNoDerot,axis=0) #combine both channels
+        self.finalNoDerot=np.mean(self.medianNoDerot,axis=0) #take median of all images at each pixel
         #self.finalvarNoDerot=np.mean(self.varNoDerot,axis=0)         #small number approximation - 
         self.finalvarNoDerot=(np.mean(self.varNoDerot,axis=0) / #variance on mean = mean of variances / N
                               (self.varNoDerot.shape[0]))#(2*self.varNoDerot.shape[0]))          #or alternatively
                                                                      #uncertainty on mean = mean of uncertainties / sqrt(N)
         #need to fix uncertainty tracking...current version should underestimate variances, only alteratives (apart from MC) appear to overestimate them
-#        self.finalvarNoDerot+=
         if self.rot=='PUPIL':        
-            self.finalDerot=np.mean(self.medianDerot,axis=0) #produces L- and R- channel images
-            #self.finalDerot=np.mean(self.finalDerot,axis=0) #combine both channels
+            self.finalDerot=np.mean(self.medianDerot,axis=0) #take median of all derotated images at each pixel
             #self.finalVarDerot=np.mean(self.varDerot,axis=0)         #small number approximation - 
             self.finalVarDerot=(np.mean(self.varDerot,axis=0) / #variance on mean = mean of variances / N
                                   (self.varDerot.shape[0]))          #or alternatively
@@ -307,7 +293,7 @@ class Irdis(Instrument):
         return
 
     def ADI(self,**kwargs): #test on GD50
-        #classical ADI, take median non-derotated frame and subtract it from each non-derotated frame, then derotate all frames and collapse the whole cube
+        """ This method perfoms classical ADI by taking the median non-derotated frame and subtracting it from each non-derotated frame. It then derotates all frames and collapses the whole cube """
         self.medianADI=np.array([])
         self.varADI=np.array([])
         isci=0
@@ -328,7 +314,7 @@ class Irdis(Instrument):
                                              np.array([0,
                                                        self.shiftl[isci][1][0],
                                                        self.shiftl[isci][0][0]
-                                             ])#[0,self.shiftl[isci][0][
+                                             ])
             )
             datar=simage.interpolation.shift(datar,
                                              np.array([0,
@@ -336,26 +322,18 @@ class Irdis(Instrument):
                                                        self.shiftr[isci][0][0]
                                              ])
             )
-            #chanshift=register_images(datal[0],datar[0],usamp=10.)
-            #datar=simage.interpolation.shift(datar,[0,chanshift[0],chanshift[1]])
             #subtract speckle image (non-derotated median frames)
             datal=datal-self.finalNoDerot
             datar=datar-self.finalNoDerot
             #derotate channels
-            #centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
-            #self.findcentre(self.medianNoDerot[isci][0],centreGuess)
-#            self.centre=[self.central['xcentroid'],self.central['ycentroid']]                
             #then calculate rotation as a function of time
             self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
             self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
             for i in range(data.shape[0]):
                 angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
                     #then derotate each frame of each half of the detector
-                self.derotate(datal[i,:,:],self.centre,angle) #simage.interpolation.rotate(datal[i,:,:],angle,reshape=False) #somehow I must be able to pass in the centre of rotation...I guess I could also shift it so that it is centred correctly first.
+                self.derotate(datal[i,:,:],self.centre,angle) 
                 
-            #centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
-            #self.findcentre(self.medianNoDerot[isci][1],centreGuess)
-            #self.centre=[self.central['xcentroid'],self.central['ycentroid']]
             #then calculate rotation as a function of time
             self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
             self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
@@ -476,13 +454,10 @@ class Irdis(Instrument):
         self.shiftr=[]
         for f in self.science:
             isci+=1
-            #if isci == 0:
-            #    continue
             f=self.datadir+f[1]+'.fits'
             #read data
             data,header=self.readdata(f)
             #print data
-            #print np.sum(np.isnan(data))
             if isci==0:
                 #pull important info out of header from first science file
                 self.rot=header['HIERARCH ESO INS4 COMB ROT']
@@ -505,27 +480,10 @@ class Irdis(Instrument):
             else:
                 data[:,:] = interpolate_replace_nans(data[:,:],Gaussian2DKernel(stddev=1))
             #split channels and align
-            #print data[np.logical_not(np.isfinite(data))]
-            #mask=np.logical_not(np.isfinite(data))
-            
-            #exit()
             datal,datar=self.splitchannels(data)
-            #print np.sum(np.isfinite(datal))
-            #print np.sum(np.isfinite(datar))
-            
-#            print data.shape,datal.shape
-#            exit()
-            #chanshift=register_images(datal[0],datar[0],usfac=10.)
-            #datar=simage.interpolation.shift(datar,[0,chanshift[0],chanshift[1]])
-            #data=np.r_[datal,datar]
-            #datal=None
-            #datar=None
-
-            #centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
-            #self.findcentre(self.medianNoDerot[isci][0],centreGuess)
-            #self.centre=[self.central['xcentroid'],self.central['ycentroid']]
 
             #----------------------------NOW THINGS ARE DIFFERENT DEPENDING ON METHOD!!--------------------------
+            #Undithering data:
             try:
                 self.medianNoDerot=np.r_[self.medianNoDerot,
                                          [simage.interpolation.shift(np.nanmedian(datal,axis=0),
@@ -600,26 +558,14 @@ class Irdis(Instrument):
             self.medianNoDerot[isci*2+1]=simage.interpolation.shift(self.medianNoDerot[isci*2 + 1],np.array([self.shiftr[isci][1][0],self.shiftr[isci][0][0]]))
             self.varNoDerot[isci*2]=simage.interpolation.shift(self.varNoDerot[isci*2],np.array([self.shiftl[isci][1][0],self.shiftl[isci][0][0]]))#tf.warp(self.medianNoDerot[isci*2 -1],tform)# [yshift, xshift]
             self.varNoDerot[isci*2+1]=simage.interpolation.shift(self.varNoDerot[isci*2 + 1],np.array([self.shiftr[isci][1][0],self.shiftr[isci][0][0]]))
-            #self.centre=self.centrel
-            #else:
-            #self.medianNoDerot[isci*2]=simage.interpolation.shift(self.medianNoDerot[isci*2],[self.shiftr[1],self.shiftr[0]])
-            #print simage.interpolation.shift(self.medianNoDerot[1],self.shiftr)
-            #print self.medianNoDerot[1]
-            #print self.shiftr
             print(isci*2,isci*2+1)
-            temp=self.medianNoDerot[isci*2]+self.medianNoDerot[isci*2+1]#simage.interpolation.shift(self.medianNoDerot[1],[self.shiftr[1],self.shiftr[0]])
+            temp=self.medianNoDerot[isci*2]+self.medianNoDerot[isci*2+1]
             
             #now derotate cube if pupil stabilised
             if self.rot=='PUPIL':
-                #continue
-                #shift cubes to centre them correctly
-            #    centreGuess=[header['HIERARCH ESO SEQ CORO XC'],header['HIERARCH ESO SEQ CORO XC']]
-            #    self.findcentre(self.medianNoDerot[isci][0],centreGuess)
-            #    self.centre=[self.central['xcentroid'],self.central['ycentroid']]
-#                pass
-            #first find centre of rotation
+                #first find centre of rotation
                 
-            #then calculate rotation as a function of time
+                #then calculate rotation as a function of time
                 self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
                 self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
                 #centre cube:
@@ -636,15 +582,8 @@ class Irdis(Instrument):
                 for i in range(data.shape[0]):
                     angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
                     #then derotate each frame of each half of the detector
-                    self.derotate(datal[i,:,:],self.centre,angle) #simage.interpolation.rotate(datal[i,:,:],angle,reshape=False) #somehow I must be able to pass in the centre of rotation...I guess I could also shift it so that it is centred correctly first.
-                
-                #centreGuess=[header['HIERARCH ESO SEC CORO XC'],header['HIERARCH ESO SEC CORO XC']]
-                #self.findcentre(self.medianNoDerot[isci][1],centreGuess)
-                #self.centre=[self.central['xcentroid'],self.central['ycentroid']]
-#                pass
-            #first find centre of rotation
-                
-            #then calculate rotation as a function of time
+                    self.derotate(datal[i,:,:],self.centre,angle) #simage.interpolation.rotate(datal[i,:,:],angle,reshape=False) #somehow I must be able to pass in the centre of rotation...I guess I could also shift it so that it is centred correctly first.                
+                #then calculate rotation as a function of time
                 self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
                 self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
                 datar=simage.interpolation.shift(datar,
@@ -679,36 +618,10 @@ class Irdis(Instrument):
                                            [(np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
                                             (np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2]
                                           )
-                    #simage.interpolation.shift(np.nanmedian(datal,axis=0),
-                                        #                           [0,header['HIERARCH ESO INS1 DITH POSX'],
-                                        #                            header['HIERARCH ESO INS1 DITH POSY']]),
-                                        #simage.interpolation.shift(np.nanmedian(datar,axis=0),
-                                        #                           [0,header['HIERARCH ESO INS1 DITH POSX']+self.shiftr[1],
-                                        #                            header['HIERARCH ESO INS1 DITH POSY']+self.shiftr[0]])
-                                        #]
-                                       #] #make sure the sign is right here (by inspection!!)
-                
-                                    #[simage.interpolation.shift((np.pi/(2.*datal.shape[0]))*(np.std(datal,axis=0))**2,
-                                                                
-                                    #                            [0,header['HIERARCH ESO INS1 DITH POSX'],
-                                    #                             header['HIERARCH ESO INS1 DITH POSY']]),
-                                     #simage.interpolation.shift((np.pi/(2.*datar.shape[0]))*(np.std(datar,axis=0))**2,
-                                     #                           [0,header['HIERARCH ESO INS1 DITH POSX']+self.shiftr[1],
-                                     #                            header['HIERARCH ESO INS1 DITH POSY']+self.shiftr[0]])
-                                     #]
-                                    #]
-            #self.sciframes
-            #isci+=1
 
 
         if self.mode=='IRD_SCI_CLI_OBJ':#'CI':
             self.CI()
-            #print  self.finalNoDerot.shape
-            #plt.figure()
-            #plt.imshow(self.finalNoDerot,norm=cols.Normalize(vmin=0.1,vmax=1.))
-            #plt.figure()
-            #plt.imshow(self.finalDerot,norm=cols.Normalize(vmin=0.1,vmax=1.))
-            #plt.show()
         elif self.mode=='DPI':
             self.DPI()
         elif self.mode=='SDI':
