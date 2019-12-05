@@ -136,6 +136,17 @@ class Irdis(Instrument):
                     print("No sky frame found. Please check your association tree contains all required calibrations")
                     print("Do not continue with reduction!")
                     #return
+        elif 'DBI' in self.mode:
+            self.flats=observation.cals['IRD_DBI_FLAT']
+            try:
+                self.sky=observation.cals['IRD_SCI_CLI_SKY']  #or does this need to be 'IRD_SKY_BG_RAW'? #Sky
+            except KeyError:
+                try:
+                    self.sky=observation.cals['IRD_SKY_BG_RAW']  #or does this need to be 'IRD_SKY_BG_RAW'? #Sky
+                except KeyError:
+                    print("No sky frame found. Please check your association tree contains all required calibrations")
+                    print("Do not continue with reduction!")
+                    #return
                 
         try:
             self.flux=observation.cals['IRD_FLUX_CALIB_CORO_RAW'] #flux
@@ -152,7 +163,7 @@ class Irdis(Instrument):
         self.options=options
         self.interProd=interProd #write out intermediate products? (master dark, etc)
         #calibration angles
-        self.pupilOffset=135.87 #Pupil offset angle
+        self.pupilOffset=-135.99 #Pupil offset angle
         self.tn=-1.764 #True North offset
         #astrometric calibration numbers - probably won't use these and just say that pipeline is not suitable for high-precision astrometry
         self.plateScale=12.251 #IRDIS plate scale (after distortion correction) of irdis detector
@@ -257,12 +268,13 @@ class Irdis(Instrument):
         #call this after dark/flat/sky correction and centre finding but before anything else - will probably end up most used...
         return data[:,:,0:1024],data[:,:,1024:2048]
 
-    def derotate(self,data,centre,angle,**kwargs):
+    def derotate(self,data,angle,**kwargs):
         """ Function to derotate images. Assumes images are already centred """
         #derotate
-        data=simage.interpolation.rotate(data,angle)
+        return simage.interpolation.rotate(data,angle,reshape=False)
 
     def CI(self,**kwargs): #test on VY CMa
+        print("Combining images for CI")
         self.finalNoDerot=np.mean(self.medianNoDerot,axis=0) #take median of all images at each pixel
         #self.finalvarNoDerot=np.mean(self.varNoDerot,axis=0)         #small number approximation - 
         self.finalvarNoDerot=(np.mean(self.varNoDerot,axis=0) / #variance on mean = mean of variances / N
@@ -278,7 +290,7 @@ class Irdis(Instrument):
 
     def SDI(self,**kwargs): #test on GD50, VY CMa
         self.CI()
-
+        print("Combining images for SDI")
         self.SDINoDerot=np.mean(self.medianNoDerot,axis=0) #produces L- and R- channel images
         self.SDINoDerot=self.SDINoDerot[1]-self.SDINoDerot[0] #check which way round this is supposed to be! and scaling!
 
@@ -332,7 +344,7 @@ class Irdis(Instrument):
             for i in range(data.shape[0]):
                 angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
                     #then derotate each frame of each half of the detector
-                self.derotate(datal[i,:,:],self.centre,angle) 
+                datal[i,:,:]=self.derotate(datal[i,:,:],angle) 
                 
             #then calculate rotation as a function of time
             self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
@@ -340,7 +352,7 @@ class Irdis(Instrument):
             for i in range(data.shape[0]):
                 angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
                     #then derotate each frame of each half of the detector
-                self.derotate(datar[i,:,:],self.centre,angle)
+                datar[i,:,:]=self.derotate(datar[i,:,:],angle)
             #now build ADI medians for each dither position
             try:
                 self.medianADI=np.r_[self.medianADI,
@@ -452,7 +464,7 @@ class Irdis(Instrument):
         self.centrer=[]
         self.shiftl=[]
         self.shiftr=[]
-        for f in self.science:
+        for f in self.science[:4]:
             isci+=1
             f=self.datadir+f[1]+'.fits'
             #read data
@@ -580,9 +592,9 @@ class Irdis(Instrument):
                                                 )
                 #shift data to common reference frame
                 for i in range(data.shape[0]):
-                    angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
+                    angle=-1.*self.parang[0] + (i+0.5)*self.pdelt + self.pupilOffset + self.tn #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well! ##-self.parangInit is not required
                     #then derotate each frame of each half of the detector
-                    self.derotate(datal[i,:,:],self.centre,angle) #simage.interpolation.rotate(datal[i,:,:],angle,reshape=False) #somehow I must be able to pass in the centre of rotation...I guess I could also shift it so that it is centred correctly first.                
+                    datal[i,:,:]=self.derotate(datal[i,:,:],angle) #simage.interpolation.rotate(datal[i,:,:],angle,reshape=False) #somehow I must be able to pass in the centre of rotation...I guess I could also shift it so that it is centred correctly first.                
                 #then calculate rotation as a function of time
                 self.parang=[header['HIERARCH ESO TEL PARANG START'],header['HIERARCH ESO TEL PARANG START']]
                 self.pdelt=(self.parang[1]-self.parang[0])/data.shape[0]
@@ -596,9 +608,9 @@ class Irdis(Instrument):
                                                  )
                                                 )
                 for i in range(data.shape[0]):
-                    angle=-1.*self.parang[0]-self.parangInit + (i+0.5)*self.pdelt #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well!
+                    angle=-1.*self.parang[0] + (i+0.5)*self.pdelt + self.pupilOffset + self.tn #rotation angle at centre of exposure relative to beginning of entire sequence - add absolute rotations as well! ##-self.parangInit is not required
                     #then derotate each frame of each half of the detector
-                    self.derotate(datar[i,:,:],self.centre,angle)
+                    datar[i,:,:]=self.derotate(datar[i,:,:],angle)
                 try:
                     self.medianDerot=np.r_[self.medianDerot,
                                            [np.nanmedian(datal,axis=0),
@@ -624,7 +636,7 @@ class Irdis(Instrument):
             self.CI()
         elif self.mode=='DPI':
             self.DPI()
-        elif self.mode=='SDI':
+        elif self.mode=='IRD_SCI_DBI_OBJ':
             self.SDI()
         else:
             print('IRDIS mode not recognised')
@@ -646,21 +658,29 @@ class Irdis(Instrument):
             hdu.header.append(("Flux factor",1,"No flux frames observed, no conversion necessary"))
         #hdu.header.append(("COMMENT",self.__str__().encode("ascii"))) #full list of files and associations used to produce this dataset - fix in future versions to produce a more useful list which can be used to reconstruct the processing without the association tree ... fix later...
         hdulist=fits.HDUList(hdu)
+        """ CI outputs are always required because it always gets done  """
         hdu=fits.ImageHDU(self.finalNoDerot,name="Image (No Derotation)")
         hdulist.append(hdu)
         #How should this be structured?
-        if self.mode=='IRD_SCI_CLI_OBJ':#'CI':
+        #if self.mode=='IRD_SCI_CLI_OBJ':#'CI':
             #CI - required outputs, finalNoDerot,finalDerot,ADI,fluxcal,photcal, uncertainty frames
-            hdu=fits.ImageHDU(self.finalvarNoDerot, name="variance (no derotation)")
-            hdulist.append(hdu)
-            if self.rot=='PUPIL':
-                #Derotated images
-                hdulist.append(fits.ImageHDU(self.finalDerot,name="Image (derotated)"))
-                hdulist.append(fits.ImageHDU(self.finalVarDerot, name="variance (derotated)"))
-            pass
+        hdu=fits.ImageHDU(self.finalvarNoDerot, name="variance (no derotation)")
+        hdulist.append(hdu)
+        if self.rot=='PUPIL':
+            #Derotated images
+            hdulist.append(fits.ImageHDU(self.finalDerot,name="Image (derotated)"))
+            hdulist.append(fits.ImageHDU(self.finalVarDerot, name="variance (derotated)"))
+            #pass
         elif self.mode=='DPI':
+            """ Special outputs just for DPI """
             pass
-        elif self.mode=='SDI':
+        elif self.mode=='IRD_SCI_DBI_OBJ':
+            """ Special outputs just for DBI """
+            hdulist.append(self.SDINoDerot, name='SDI')
+            hdulist.append(self.varSDINoDerot, name='var SDI')
+            if self.rot=='PUPIL':
+                hdulist.append(self.SDIDerot, name='SDI derotated')
+                hdulist.append(self.varSDIDerot, name='var SDI derotated')
             pass
         logtime = str(datetime.datetime.now()).replace(" ","_")
         hdulist.writeto(self.prefix+"_"+logtime+"_prod.fits")
