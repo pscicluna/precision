@@ -464,7 +464,7 @@ class Irdis(Instrument):
         self.centrer=[]
         self.shiftl=[]
         self.shiftr=[]
-        for f in self.science[:4]:
+        for f in self.science:
             isci+=1
             f=self.datadir+f[1]+'.fits'
             #read data
